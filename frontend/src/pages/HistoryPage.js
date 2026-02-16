@@ -1,6 +1,7 @@
 import React from 'react';
 import Layout from '../components/Layout';
 import RefactoredChart from '../components/RefactoredChart';
+import useMqtt from '../hooks/useMqtt';
 
 // Sample Data for Charts
 const tempData = [
@@ -24,10 +25,35 @@ const humidityData = [
 ];
 
 export default function HistoryPage() {
+    const { publishCommand } = useMqtt();
+
+    const handleExport = () => {
+        publishCommand('jardin/commands/water', { command: 'EXPORT_DATA' });
+        // Simulating delay for generation, then downloading
+        setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = '/report.csv';
+            link.download = 'rapport_jardin.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }, 2000);
+    };
+
     return (
         <Layout>
+            <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Historique des Données</h2>
+                <button
+                    onClick={handleExport}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2"
+                >
+                    <i className="fa-solid fa-file-csv"></i>
+                    Télécharger Rapport
+                </button>
+            </div>
+
             <section id="charts-section" className="mb-8">
-                <h2 className="text-2xl font-bold mb-6">Historique des Données</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -50,7 +76,10 @@ export default function HistoryPage() {
             </section>
 
             <section id="lcd-display-section" className="mb-8">
-                <h2 className="text-2xl font-bold mb-6">Journal des Événements</h2>
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                    <i className="fa-solid fa-list-check"></i>
+                    Journal des Événements
+                </h2>
                 <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
                     <table className="w-full text-left text-sm text-gray-400">
                         <thead className="bg-gray-800 text-gray-200 uppercase font-medium">

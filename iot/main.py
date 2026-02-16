@@ -62,6 +62,13 @@ def main():
             elif command == 'SET_INTENSITY':
                 value = data.get('value', 0)
                 grow_light.set_intensity(value)
+
+            elif command == 'EXPORT_DATA':
+                success = db.export_to_csv()
+                if success:
+                    mqtt_client.publish_alert("Rapport généré avec succès!", "info")
+                else:
+                    mqtt_client.publish_alert("Erreur lors de la génération du rapport.", "error")
                 
         except Exception as e:
             logger.error(f"Failed to parse command: {e}")

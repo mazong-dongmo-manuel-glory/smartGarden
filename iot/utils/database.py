@@ -56,3 +56,35 @@ class DatabaseManager:
                 logger.debug("Sensor reading saved to database.")
         except Exception as e:
             logger.error(f"Failed to save reading: {e}")
+
+    def export_to_csv(self):
+        """Exports all data to a CSV file in the frontend public folder."""
+        import csv
+        
+        # Path to frontend/public
+        # Current file is in iot/utils/
+        # We need to go up to iot/ -> smart/ -> frontend/ -> public/
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        export_path = os.path.join(base_dir, 'frontend', 'public', 'report.csv')
+        
+        try:
+            conn = self.get_connection()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT * FROM readings ORDER BY timestamp DESC")
+                rows = cursor.fetchall()
+                
+                # Get column names
+                headers = [description[0] for description in cursor.description]
+                
+                with open(export_path, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(headers)
+                    writer.writerows(rows)
+                
+                conn.close()
+                logger.info(f"Data exported successfully to {export_path}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to export data: {e}")
+            return False

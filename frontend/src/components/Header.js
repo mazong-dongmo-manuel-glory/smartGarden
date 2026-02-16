@@ -16,10 +16,18 @@ const Header = () => {
                 </div>
 
                 <nav className="flex items-center gap-8">
-                    <Link to="/dashboard" className="text-primary font-medium hover:text-primary/80 transition">Tableau de bord</Link>
-                    <Link to="/setting" className="text-gray-400 hover:text-white transition">Contrôles</Link>
-                    <Link to="/history" className="text-gray-400 hover:text-white transition">Historique</Link>
-                    <Link to="/setting" className="text-gray-400 hover:text-white transition">Paramètres</Link>
+                    <Link to="/dashboard" className="text-primary font-medium hover:text-primary/80 transition flex items-center gap-2">
+                        <i className="fa-solid fa-gauge-high"></i>
+                        <span>Tableau de bord</span>
+                    </Link>
+                    <Link to="/setting" className="text-gray-400 hover:text-white transition flex items-center gap-2">
+                        <i className="fa-solid fa-sliders"></i>
+                        <span>Contrôles</span>
+                    </Link>
+                    <Link to="/history" className="text-gray-400 hover:text-white transition flex items-center gap-2">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
+                        <span>Historique</span>
+                    </Link>
                 </nav>
 
                 <div className="flex items-center gap-4">

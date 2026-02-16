@@ -88,7 +88,7 @@ export default function DashboardPage() {
                             title="Humidité Air"
                             value={sensorData.humidity || "--"}
                             unit="%"
-                            icon="fa-wind"
+                            icon="fa-cloud"
                             color="bg-purple-500"
                             status="Temps Réel"
                             progress={sensorData.humidity || 0}
