@@ -4,8 +4,11 @@ import Footer from '../components/Footer';
 import MetricCard from '../components/MetricCard';
 import StatusCard from '../components/StatusCard';
 import PlantCard from '../components/PlantCard';
+import useMqtt from '../hooks/useMqtt';
 
 export default function DashboardPage() {
+    const { isConnected, sensorData, alerts } = useMqtt();
+
     return (
         <div className="bg-gray-950 text-gray-100 font-sans min-h-screen">
             <Header />
@@ -18,14 +21,14 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h2 className="text-3xl font-bold mb-2">État du Système</h2>
-                                <p className="text-gray-400">Surveillance en temps réel - Dernière mise à jour: Il y a 2 secondes</p>
+                                <p className="text-gray-400">Surveillance en temps réel - {isConnected ? "Connecté au Broker MQTT" : "Déconnecté"}</p>
                             </div>
                             <div className="flex items-center gap-4">
                                 <div className="text-center">
-                                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-2">
-                                        <i className="fa-solid fa-circle text-primary text-2xl animate-pulse"></i>
+                                    <div className={`w-16 h-16 ${isConnected ? 'bg-primary/20' : 'bg-red-500/20'} rounded-full flex items-center justify-center mb-2`}>
+                                        <i className={`fa-solid fa-circle ${isConnected ? 'text-primary' : 'text-red-500'} text-2xl ${isConnected ? 'animate-pulse' : ''}`}></i>
                                     </div>
-                                    <span className="text-xs text-gray-400">Système OK</span>
+                                    <span className="text-xs text-gray-400">{isConnected ? "Système OK" : "Erreur Connexion"}</span>
                                 </div>
                             </div>
                         </div>
@@ -35,9 +38,18 @@ export default function DashboardPage() {
                 {/* Alerts Section */}
                 <section id="alerts-section" className="mb-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <StatusCard title="Système Normal" description="Toutes les conditions sont optimales" type="success" />
-                        <StatusCard title="Avertissement Mineur" description="Humidité légèrement basse" type="warning" />
-                        <StatusCard title="Défaillance Majeure" description="Aucune défaillance détectée" type="danger" />
+                        {alerts.length > 0 ? (
+                            alerts.map((alert, index) => (
+                                <StatusCard
+                                    key={index}
+                                    title={alert.level === 'error' ? "Erreur Critique" : "Avertissement"}
+                                    description={alert.message}
+                                    type={alert.level === 'error' ? "danger" : "warning"}
+                                />
+                            ))
+                        ) : (
+                            <StatusCard title="Système Normal" description="Aucune alerte récente" type="success" />
+                        )}
                     </div>
                 </section>
 
@@ -47,39 +59,39 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <MetricCard
                             title="Température"
-                            value="23.5"
+                            value={sensorData.temperature || "--"}
                             unit="°C"
                             icon="fa-temperature-half"
                             color="bg-red-500"
-                            status="Optimal"
-                            progress={65}
+                            status="Temps Réel"
+                            progress={sensorData.temperature ? (sensorData.temperature / 40) * 100 : 0}
                         />
                         <MetricCard
                             title="Humidité du Sol"
-                            value="68"
+                            value={sensorData.moisture || "--"}
                             unit="%"
                             icon="fa-droplet"
                             color="bg-blue-500"
-                            status="Bon"
-                            progress={68}
+                            status="Temps Réel"
+                            progress={sensorData.moisture || 0}
                         />
                         <MetricCard
                             title="Luminosité"
-                            value="850"
+                            value={sensorData.light || "--"}
                             unit="lux"
                             icon="fa-sun"
                             color="bg-yellow-500"
-                            status="Intense"
-                            progress={85}
+                            status="Temps Réel"
+                            progress={sensorData.light ? (sensorData.light / 1000) * 100 : 0}
                         />
                         <MetricCard
-                            title="Qualité de l'Air"
-                            value="92"
-                            unit="AQI"
+                            title="Humidité Air"
+                            value={sensorData.humidity || "--"}
+                            unit="%"
                             icon="fa-wind"
                             color="bg-purple-500"
-                            status="Excellent"
-                            progress={92}
+                            status="Temps Réel"
+                            progress={sensorData.humidity || 0}
                         />
                     </div>
                 </section>

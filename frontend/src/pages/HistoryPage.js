@@ -1,5 +1,27 @@
 import React from 'react';
 import Layout from '../components/Layout';
+import RefactoredChart from '../components/RefactoredChart';
+
+// Sample Data for Charts
+const tempData = [
+    { time: '00:00', value: 20 },
+    { time: '04:00', value: 18 },
+    { time: '08:00', value: 22 },
+    { time: '12:00', value: 28 },
+    { time: '16:00', value: 26 },
+    { time: '20:00', value: 23 },
+    { time: '23:59', value: 21 },
+];
+
+const humidityData = [
+    { time: '00:00', value: 65 },
+    { time: '04:00', value: 70 },
+    { time: '08:00', value: 68 },
+    { time: '12:00', value: 55 },
+    { time: '16:00', value: 60 },
+    { time: '20:00', value: 65 },
+    { time: '23:59', value: 70 },
+];
 
 export default function HistoryPage() {
     return (
@@ -13,14 +35,7 @@ export default function HistoryPage() {
                             <i className="fa-solid fa-temperature-half text-red-500"></i>
                             Température (24h)
                         </h3>
-                        {/* Placeholder for Chart */}
-                        <div className="h-[300px] w-full bg-gray-800/50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-700">
-                            <div className="text-center text-gray-500">
-                                <i className="fa-solid fa-chart-line text-4xl mb-2"></i>
-                                <p>Graphique de Température</p>
-                                <p className="text-xs mt-1">Intégrez votre bibliothèque de graphiques ici (ex: Recharts, Chart.js)</p>
-                            </div>
-                        </div>
+                        <RefactoredChart data={tempData} dataKey="value" color="#ef4444" unit="°C" />
                     </div>
 
                     <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -28,14 +43,7 @@ export default function HistoryPage() {
                             <i className="fa-solid fa-droplet text-blue-500"></i>
                             Humidité du Sol (24h)
                         </h3>
-                        {/* Placeholder for Chart */}
-                        <div className="h-[300px] w-full bg-gray-800/50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-700">
-                            <div className="text-center text-gray-500">
-                                <i className="fa-solid fa-chart-area text-4xl mb-2"></i>
-                                <p>Graphique d'Humidité</p>
-                                <p className="text-xs mt-1">Intégrez votre bibliothèque de graphiques ici (ex: Recharts, Chart.js)</p>
-                            </div>
-                        </div>
+                        <RefactoredChart data={humidityData} dataKey="value" color="#3b82f6" unit="%" />
                     </div>
 
                 </div>

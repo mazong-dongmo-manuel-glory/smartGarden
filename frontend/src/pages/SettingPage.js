@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
+import useMqtt from '../hooks/useMqtt';
 
 export default function SettingPage() {
     // State simulating toggle switches
     const [notifications, setNotifications] = useState(true);
     const [autoMode, setAutoMode] = useState(true);
+    const { publishCommand } = useMqtt();
+
+    const handleLightCommand = (intensity) => {
+        publishCommand('jardin/commands/light', { command: 'SET_INTENSITY', value: intensity });
+    };
+
+    const handleWaterCommand = () => {
+        publishCommand('jardin/commands/water', { command: 'START_WATERING', duration: 10 });
+    };
 
     return (
         <Layout>
@@ -37,25 +47,25 @@ export default function SettingPage() {
                         </div>
 
                         <div className="grid grid-cols-3 gap-3 mt-6">
-                            <div className="bg-gray-800 rounded-lg p-3 text-center border-2 border-yellow-500 cursor-pointer hover:bg-gray-700 transition">
+                            <button onClick={() => handleLightCommand(100)} className="bg-gray-800 rounded-lg p-3 text-center border-2 border-yellow-500 cursor-pointer hover:bg-gray-700 transition">
                                 <i className="fa-solid fa-sun text-yellow-500 mb-2"></i>
                                 <div className="text-xs text-gray-400">Matin</div>
                                 <div className="text-xs font-semibold text-white">Intense</div>
-                            </div>
-                            <div className="bg-gray-800 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-700 transition">
+                            </button>
+                            <button onClick={() => handleLightCommand(50)} className="bg-gray-800 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-700 transition">
                                 <i className="fa-solid fa-cloud-sun text-gray-600 mb-2"></i>
                                 <div className="text-xs text-gray-400">Après-midi</div>
                                 <div className="text-xs font-semibold text-gray-600">Modéré</div>
-                            </div>
-                            <div className="bg-gray-800 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-700 transition">
+                            </button>
+                            <button onClick={() => handleLightCommand(0)} className="bg-gray-800 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-700 transition">
                                 <i className="fa-solid fa-moon text-gray-600 mb-2"></i>
                                 <div className="text-xs text-gray-400">Nuit</div>
                                 <div className="text-xs font-semibold text-gray-600">OFF</div>
-                            </div>
+                            </button>
                         </div>
                     </div>
 
-                    <button className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-3">
+                    <button onClick={() => handleLightCommand(0)} className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-3">
                         <i className="fa-solid fa-power-off"></i>
                         Éteindre Manuellement
                     </button>
@@ -87,7 +97,7 @@ export default function SettingPage() {
                         ))}
                     </div>
 
-                    <button className="w-full bg-primary hover:bg-secondary text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-3">
+                    <button onClick={handleWaterCommand} className="w-full bg-primary hover:bg-secondary text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-3">
                         <i className="fa-solid fa-play"></i>
                         Démarrer l'Arrosage
                     </button>
