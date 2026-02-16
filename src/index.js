@@ -1,11 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import "./index.css";
+
 import Login from "./pages/LoginPage";
 import Dashboard from "./pages/DashboardPage";
 import Setting from "./pages/SettingPage";
 import History from "./pages/HistoryPage";
-import SignUp from "./pages/SignUpPage";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -24,10 +24,6 @@ const router = createBrowserRouter([
     {
         path: '/history',
         element: <History />
-    },
-    {
-        path: '/signup',
-        element: <SignUp />
     }
 ]);
 

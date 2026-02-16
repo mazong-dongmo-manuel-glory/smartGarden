@@ -1,68 +1,57 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🌿 AgriSmart IoT - Smart Garden Dashboard
 
-## Available Scripts
+Une interface de tableau de bord moderne pour la surveillance et la gestion d'un jardin intelligent (Smart Garden). Ce projet permet de visualiser les données des capteurs en temps réel et de surveiller l'état des plantes.
 
-In the project directory, you can run:
+![AgriSmart Dashboard](https://via.placeholder.com/800x400?text=AgriSmart+Dashboard+Preview)
 
-### `yarn start`
+## 🚀 Fonctionnalités
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- **Tableau de Bord Intuitif** : Vue d'ensemble de l'état du système.
+- **Monitoring Environnemental** : Affichage en temps réel de :
+  - Température
+  - Humidité du sol
+  - Luminosité
+  - Qualité de l'air
+- **Suivi des Plantes** : Cartes individuelles pour chaque plante montrant la croissance, la hauteur et la santé.
+- **Alertes Système** : Notifications visuelles pour les états normaux, avertissements et dangers.
+- **Interface Responsive** : Design adapté aux mobiles et bureaux.
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+## 🛠 Technologies Utilisées
 
-### `yarn test`
+- **React 19** : Bibliothèque UI principale.
+- **Tailwind CSS** : Framework CSS pour le stylisme rapide et responsive.
+- **React Router** : Gestion de la navigation.
+- **Font Awesome** : Icônes vectorielles.
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 📦 Installation et Démarrage
 
-### `yarn build`
+1. **Cloner le projet**
+   ```bash
+   git clone https://github.com/mazong-dongmo-manuel-glory/smartGarden.git
+   cd smart
+   ```
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Installer les dépendances**
+   ```bash
+   npm install
+   ```
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+3. **Lancer le serveur de développement**
+   ```bash
+   npm start
+   ```
+   L'application sera accessible sur [http://localhost:3000](http://localhost:3000).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📂 Structure du Projet
 
-### `yarn eject`
+- `src/components/` : Composants réutilisables (MetricCard, PlantCard, etc.).
+- `src/pages/` : Pages de l'application (Dashboard, Login, etc.).
+- `active_design.html` : Maquette de référence (si applicable).
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## 🤝 Contribution
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une *issue* ou une *pull request*.
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## 📝 Licence
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+[MIT](LICENSE)
