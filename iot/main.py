@@ -121,7 +121,14 @@ def main():
         logger.info("System stopping...")
         pump.off()
         leds.set('green', False)
-        # Clean up GPIO if needed
+        # Nettoyage GPIO (capteur pluie numérique, etc.)
+        if not __import__('config').MOCK_MODE:
+            try:
+                import RPi.GPIO as GPIO
+                GPIO.cleanup()
+                logger.info("GPIO nettoyé.")
+            except Exception:
+                pass
 
 if __name__ == "__main__":
     main()

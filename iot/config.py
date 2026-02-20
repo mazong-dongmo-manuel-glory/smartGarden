@@ -21,14 +21,19 @@ TOPIC_COMMANDS_WATER = f"{TOPIC_PREFIX}/commands/water"
 TOPIC_COMMANDS_LIGHT = f"{TOPIC_PREFIX}/commands/light"
 
 # --- GPIO Pins (BCM Mode) ---
-PIN_PUMP = 17
+PIN_PUMP = 18       # Pompe → GPIO 18
 PIN_GROW_LIGHT = 27
 PIN_LED_GREEN = 22
 PIN_LED_ORANGE = 23
 PIN_LED_RED = 24
-PIN_DHT = 4  # Temperature sensor
-PIN_SOIL = 0  # ADC Channel 0 (requires MCP3008 usually, or digital pin)
-PIN_LDR = 1   # ADC Channel 1
+PIN_DHT = 4         # DHT11 → GPIO 4
+RAIN_PIN = 17       # Capteur pluie numérique → GPIO 17
+
+# --- ADC PCF8591 (I2C) ---
+ADC_ADDRESS = 0x4B        # Adresse I2C du PCF8591
+RAIN_ADC_CHANNEL = 0      # A0 → Pluie (analogique)
+PIN_SOIL = 1              # A1 → Humidité du sol
+PIN_LDR = 2               # A2 → Luminosité (si branché)
 
 # --- Thresholds ---
 SOIL_MOISTURE_LOW = 30  # %
