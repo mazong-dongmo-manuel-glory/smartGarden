@@ -59,6 +59,9 @@ def main():
                 duration = data.get('duration', 10)
                 irrigation.start_watering_manual(duration)
                 
+            elif command == 'STOP_WATERING':
+                irrigation.stop_watering_manual()
+
             elif command == 'SET_INTENSITY':
                 value = data.get('value', 0)
                 grow_light.set_intensity(value)
@@ -119,7 +122,7 @@ def main():
 
     except KeyboardInterrupt:
         logger.info("System stopping...")
-        pump.off()
+        pump.cleanup()
         leds.set('green', False)
         # Nettoyage GPIO (capteur pluie numérique, etc.)
         if not __import__('config').MOCK_MODE:

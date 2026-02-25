@@ -21,13 +21,14 @@ TOPIC_COMMANDS_WATER = f"{TOPIC_PREFIX}/commands/water"
 TOPIC_COMMANDS_LIGHT = f"{TOPIC_PREFIX}/commands/light"
 
 # --- GPIO Pins (BCM Mode) ---
-PIN_PUMP = 18       # Pompe → GPIO 18
+PIN_PUMP = 17       
 PIN_GROW_LIGHT = 27
-PIN_LED_GREEN = 22
-PIN_LED_ORANGE = 23
-PIN_LED_RED = 24
+PIN_LED_GREEN = 16
+PIN_LED_ORANGE = 6
+PIN_LED_RED = 5
 PIN_DHT = 4         # DHT11 → GPIO 4
 RAIN_PIN = 17       # Capteur pluie numérique → GPIO 17
+PIN_LDR_RC = 25     # LDR RC-timing → GPIO 25 (condensateur + résistance)
 
 # --- ADC PCF8591 (I2C) ---
 ADC_ADDRESS = 0x4B        # Adresse I2C du PCF8591

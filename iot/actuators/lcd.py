@@ -70,6 +70,48 @@ class Lcd:
         if not MOCK_MODE:
             self._write(l1, l2)
 
+    def scroll(self, text: str, delay: float = 1.5):
+        """
+        Affiche un texte long en faisant défiler page par page (16 caractères / ligne).
+        Utile pour les messages qui dépassent 16 caractères.
+
+        :param text: Texte complet à afficher.
+        :param delay: Durée d'affichage de chaque page (secondes).
+
+        Exemple :
+            lcd.scroll("Bonjour Manuel Comment tu vas toi moi je vais bien")
+        """
+        import time
+        words  = text.split()
+        line1  = ""
+        line2  = ""
+
+        def flush():
+            self.display(line1, line2)
+            time.sleep(delay)
+
+        for word in words:
+            # Essaie de placer le mot sur line1
+            candidate = (line1 + " " + word).strip() if line1 else word
+            if len(candidate) <= LCD_COLS:
+                line1 = candidate
+            else:
+                # line1 est pleine, tente line2
+                candidate2 = (line2 + " " + word).strip() if line2 else word
+                if len(candidate2) <= LCD_COLS:
+                    line2 = candidate2
+                else:
+                    # Les deux lignes sont pleines : affiche et réinitialise
+                    flush()
+                    line1 = word
+                    line2 = ""
+
+        # Affiche le reste
+        if line1 or line2:
+            flush()
+
+        self.clear()
+
     def clear(self):
         """Efface l'écran LCD."""
         logger.debug("Actuator [LCD]: Effacement de l'écran.")
