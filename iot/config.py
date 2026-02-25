@@ -2,7 +2,7 @@ import os
 
 # --- General Settings ---
 MOCK_MODE = False  # False = Raspberry Pi réel | True = simulation PC
-LOOP_INTERVAL = 5  # Seconds
+LOOP_INTERVAL = 2  # Secondes — cycle rapide pour données temps réel
 
 # --- MQTT Settings ---
 MQTT_BROKER = "localhost"   # Broker Mosquitto local sur le Pi

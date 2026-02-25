@@ -5,5 +5,3 @@ smbus2
 adafruit-circuitpython-dht
 RPi.GPIO
 RPLCD
-flask
-flask-cors

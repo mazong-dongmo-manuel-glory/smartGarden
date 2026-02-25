@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-const MQTT_BROKER = 'ws://172.16.206.37:9090'; // Mosquitto WebSocket — port 9090
+const MQTT_BROKER = 'ws://172.16.206.37:9090';
 
 export default function useMqtt() {
     const clientRef = useRef(null);
@@ -9,15 +9,15 @@ export default function useMqtt() {
     const [sensorData, setSensorData] = useState({
         temperature: null,
         humidity: null,
-        moisture: null,
-        light: null,
-        rain: null,
-        waterLevel: null,
+        light: null,   // lux ADC
+        isDark: null,   // bool RC
+        rainPct: null,   // % analogique
+        rainDigital: null,   // 0=pluie, 1=sec
     });
     const [alerts, setAlerts] = useState([]);
     const [eventLog, setEventLog] = useState([]);
     const [chartTemp, setChartTemp] = useState([]);
-    const [chartMoisture, setChartMoisture] = useState([]);
+    const [chartHum, setChartHum] = useState([]);
 
     const addEvent = (topic, summary, type = 'info') => {
         const ts = new Date().toLocaleString('fr-CA', {
@@ -27,7 +27,7 @@ export default function useMqtt() {
         setEventLog(prev => [{ ts, topic, summary, type }, ...prev].slice(0, 20));
     };
 
-    const pushChartPoint = (setter, value) => {
+    const pushPoint = (setter, value) => {
         if (value == null) return;
         const ts = new Date().toLocaleTimeString('fr-CA', {
             hour: '2-digit', minute: '2-digit', second: '2-digit',
@@ -36,23 +36,18 @@ export default function useMqtt() {
     };
 
     useEffect(() => {
-        console.log(`[MQTT] Connexion à ${MQTT_BROKER}…`);
-
         const client = mqtt.connect(MQTT_BROKER, {
-            clientId: `smart_garden_web_${Math.random().toString(16).slice(2, 8)}`,
+            clientId: `sgarden_${Math.random().toString(16).slice(2, 8)}`,
             keepalive: 60,
-            protocolId: 'MQTT',
             protocolVersion: 4,
             clean: true,
-            reconnectPeriod: 3000,
+            reconnectPeriod: 1000,
             connectTimeout: 30_000,
         });
 
         client.on('connect', () => {
-            console.log('[MQTT] Connecté sur', MQTT_BROKER);
             setIsConnected(true);
-            addEvent('system', `Broker MQTT connecté (${MQTT_BROKER})`, 'success');
-
+            addEvent('system', `Connecté au broker MQTT (${MQTT_BROKER})`, 'success');
             client.subscribe('jardin/sensors/+');
             client.subscribe('jardin/alerts');
         });
@@ -60,30 +55,26 @@ export default function useMqtt() {
         client.on('message', (topic, message) => {
             try {
                 const data = JSON.parse(message.toString());
-                console.log(`[MQTT] ${topic}:`, data);
 
                 if (topic === 'jardin/sensors/temperature') {
                     setSensorData(prev => ({ ...prev, temperature: data.temperature, humidity: data.humidity }));
-                    pushChartPoint(setChartTemp, data.temperature);
-                    addEvent(topic, `Temp ${data.temperature}°C | Hum ${data.humidity}%`, 'info');
-
-                } else if (topic === 'jardin/sensors/soil') {
-                    setSensorData(prev => ({ ...prev, moisture: data.moisture }));
-                    pushChartPoint(setChartMoisture, data.moisture);
-                    addEvent(topic, `Sol ${data.moisture}%`, 'info');
+                    pushPoint(setChartTemp, data.temperature);
+                    pushPoint(setChartHum, data.humidity);
+                    addEvent(topic, `T:${data.temperature}°C | H:${data.humidity}%`);
 
                 } else if (topic === 'jardin/sensors/light') {
-                    setSensorData(prev => ({ ...prev, light: data.light }));
-                    addEvent(topic, `Lumière ${data.light} lux`, 'info');
+                    setSensorData(prev => ({ ...prev, light: data.light, isDark: data.is_dark }));
+                    addEvent(topic, `${data.light} lux | ${data.is_dark ? 'Nuit 🌙' : 'Jour ☀️'}`);
 
                 } else if (topic === 'jardin/sensors/water') {
                     setSensorData(prev => ({
                         ...prev,
-                        waterLevel: data.water_level,
-                        rain: data.rain,
+                        rainPct: data.rain_pct,
+                        rainDigital: data.rain_digital,
                     }));
-                    addEvent(topic, `Eau ${data.water_level}% | Pluie ${data.rain}%`,
-                        data.water_level < 20 ? 'warning' : 'info');
+                    const label = data.rain_digital === 0 ? '🌧️ Pluie détectée' : '☀️ Sec';
+                    addEvent(topic, `${data.rain_pct}% | ${label}`,
+                        data.rain_digital === 0 ? 'warning' : 'info');
 
                 } else if (topic === 'jardin/alerts') {
                     setAlerts(prev => [data, ...prev].slice(0, 5));
@@ -94,42 +85,29 @@ export default function useMqtt() {
             }
         });
 
-        client.on('error', err => console.error('[MQTT] Erreur:', err));
+        client.on('error', err => console.error('[MQTT]', err));
         client.on('close', () => { setIsConnected(false); addEvent('system', 'Déconnecté', 'error'); });
         client.on('reconnect', () => console.log('[MQTT] Reconnexion…'));
 
         clientRef.current = client;
         return () => client.end();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []); // eslint-disable-line
 
-    // ── Commandes ─────────────────────────────────────────────────────
     const publishCommand = (topic, message) => {
-        if (clientRef.current && isConnected) {
+        if (clientRef.current && isConnected)
             clientRef.current.publish(topic, JSON.stringify(message));
-        } else {
-            console.warn('[MQTT] Non connecté — commande ignorée');
-        }
     };
-
-    const startWatering = (duration = 10) =>
-        publishCommand('jardin/commands/water', { command: 'START_WATERING', duration });
-
-    const stopWatering = () =>
-        publishCommand('jardin/commands/water', { command: 'STOP_WATERING' });
 
     const setLightIntensity = (value) =>
         publishCommand('jardin/commands/light', { command: 'SET_INTENSITY', value });
 
+    // Pompe non disponible — stub pour compatibilité SettingPage
+    const startWatering = () => console.warn('Pompe non disponible');
+    const stopWatering = () => console.warn('Pompe non disponible');
+
     return {
-        isConnected,
-        sensorData,
-        alerts,
-        eventLog,
-        chartTemp,
-        chartMoisture,
-        publishCommand,
-        startWatering,
-        stopWatering,
-        setLightIntensity,
+        isConnected, sensorData, alerts, eventLog,
+        chartTemp, chartMoisture: chartHum,
+        publishCommand, startWatering, stopWatering, setLightIntensity,
     };
 }

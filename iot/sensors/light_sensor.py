@@ -6,77 +6,78 @@ from utils.logger import logger
 
 class LightSensor:
     """
-    Capteur de luminosité — deux méthodes complémentaires :
+    Capteur de luminosité — deux méthodes complémentaires:
 
-    1. ADC PCF8591 (I2C, 0x4B, canal A2) → lux approx. (0-1000)
-       Utilisé pour publier la valeur numérique sur MQTT.
+    1. ADC PCF8591 (I2C, adresse 0x4B, canal A2 = PIN_LDR)
+       → valeur lux approx. (0-1000) publiée sur MQTT.
+       Commande correcte : 0x40 | channel
 
-    2. RC-timing GPIO (PIN_LDR_RC = GPIO 25) → détection obscurité (bool)
-       Logique identique au code de test de l'utilisateur :
-         - Calibration unique au démarrage (calibrate_rc())
-         - count augmente = plus sombre = is_dark = True
-         - Hystérésis : +30 % baseline → ON, +15 % baseline → OFF
-       Résultat utilisé par main.py pour activer la lampe de croissance.
+    2. RC-timing GPIO (PIN_LDR_RC = GPIO 27)
+       → détection obscurité booléenne (is_dark).
+       Si le circuit RC n'est pas branché (baseline ≈ 0),
+       bascule automatiquement sur le seuil ADC (lux < 100 = nuit).
 
-    Câblage GPIO 25 :
-        3.3V ── résistance (10 kΩ) ── nœud A ── LDR ── GND
-                                       └─ condensateur (1 µF) ── GND
-        GPIO 25 connecté au nœud A
+    Câblage GPIO 27 (RC) :
+        3.3V ──▶ R 10kΩ ──┬── LDR ──▶ GND
+                          ├── C 1µF ──▶ GND
+                          └── GPIO 27
     """
 
-    # ── Seuils RC (identiques au code de test) ─────────────────────────
-    _DELTA_ON  = 0.30   # +30 % baseline → obscurité → lampe ON
-    _DELTA_OFF = 0.15   # +15 % baseline → retour à la lumière → lampe OFF (hystérésis)
-    _RC_N      = 5      # moyennes rapides (5 lectures) dans la boucle principale
-    _RC_N_CAL  = 15     # lectures pour la calibration (identique au test)
-    _RC_DELAY  = 0.01   # délai entre lectures (s)
-    _RC_TIMEOUT = 0.5   # timeout max par mesure (s)
+    # ── Seuils RC ────────────────────────────────────────────────────
+    _DELTA_ON    = 0.30   # +30 % baseline → obscurité
+    _DELTA_OFF   = 0.15   # +15 % baseline → lumière (hystérésis)
+    _RC_N        = 5      # lectures par cycle
+    _RC_N_CAL    = 15     # lectures calibration
+    _RC_DELAY    = 0.01
+    _RC_TIMEOUT  = 0.5
+
+    # ── Seuil ADC de secours (si RC non branché) ──────────────────
+    _ADC_DARK_THRESHOLD = 100   # lux < 100 → nuit
 
     def __init__(self, channel=PIN_LDR, address=ADC_ADDRESS, rc_pin=PIN_LDR_RC):
-        self.channel = channel
-        self.address = address
-        self.rc_pin  = rc_pin
+        self.channel   = channel
+        self.address   = address
+        self.rc_pin    = rc_pin
+        self.is_dark   = False
 
-        self._bus          = None
-        self._rc_baseline  = None       # défini après calibrate_rc()
-        self._threshold_on = None
-        self._threshold_off= None
-        self.is_dark       = False      # résultat mis à jour à chaque read()
+        self._bus           = None
+        self._rc_calibrated = False   # True si baseline valide
+        self._rc_baseline   = None
+        self._threshold_on  = None
+        self._threshold_off = None
 
         if not MOCK_MODE:
             self._init_bus()
 
-    # ── I2C / ADC ──────────────────────────────────────────────────────
+    # ── I2C / ADC ─────────────────────────────────────────────────
 
     def _init_bus(self):
         try:
             import smbus
             self._bus = smbus.SMBus(1)
-            logger.info(f"Sensor [Light]: SMBus initialisé "
-                        f"(adresse={hex(self.address)}, canal A{self.channel}, RC=GPIO{self.rc_pin})")
+            logger.info(f"Sensor [Light]: SMBus OK (adresse={hex(self.address)}, canal A{self.channel})")
         except Exception as e:
-            logger.error(f"Sensor [Light]: Impossible d'initialiser SMBus: {e}")
+            logger.error(f"Sensor [Light]: SMBus init failed: {e}")
             self._bus = None
 
     def _read_adc_raw(self):
-        """Double lecture PCF8591 pour éliminer le byte périmé."""
-        command = 0x84 | (self.channel << 4)
+        """
+        Lecture correcte du PCF8591 :
+        - Commande : 0x40 (activer sortie DAC) | numéro canal (0-3)
+        - Double lecture : premier byte = valeur précédente (stale) → ignoré
+        """
+        command = 0x40 | (self.channel & 0x03)
         self._bus.write_byte(self.address, command)
-        self._bus.read_byte(self.address)          # byte fantôme
-        return self._bus.read_byte(self.address)   # valeur réelle
+        self._bus.read_byte(self.address)           # byte périmé
+        return self._bus.read_byte(self.address)    # valeur réelle
 
-    # ── RC-timing ──────────────────────────────────────────────────────
+    # ── RC-timing ─────────────────────────────────────────────────
 
     def _rc_measure(self):
-        """Une mesure RC : retourne le nombre de cycles de charge."""
         import RPi.GPIO as GPIO
-
-        # Vider le condensateur
         GPIO.setup(self.rc_pin, GPIO.OUT)
         GPIO.output(self.rc_pin, GPIO.LOW)
         time.sleep(0.02)
-
-        # Compter le temps de charge
         GPIO.setup(self.rc_pin, GPIO.IN)
         count = 0
         start = time.time()
@@ -86,61 +87,76 @@ class LightSensor:
                 break
         return count
 
-    def _rc_average(self, n, delay):
-        total = sum(self._rc_measure() for _ in range(n))
-        if delay > 0:
-            time.sleep(delay * n)
-        return total / n
+    def _rc_average(self, n):
+        readings = []
+        for _ in range(n):
+            readings.append(self._rc_measure())
+            time.sleep(self._RC_DELAY)
+        return sum(readings) / len(readings)
 
     def calibrate_rc(self):
         """
-        Calibration RC unique au démarrage — à appeler une fois en dehors
-        de la boucle principale (bloque ~2 s).
-        Identique à la séquence du code de test.
+        Calibration RC (bloque ~2 s, à appeler une fois avant la boucle).
+        Si la baseline est trop faible (circuit non branché),
+        désactive le RC et utilise le seuil ADC à la place.
         """
         if MOCK_MODE:
             return
 
-        import RPi.GPIO as GPIO
-        logger.info(f"Sensor [Light RC]: Calibration sur GPIO {self.rc_pin} (2 s)…")
+        logger.info(f"Sensor [Light RC]: Calibration GPIO {self.rc_pin} (2 s)…")
         time.sleep(2)
 
-        self._rc_baseline   = self._rc_average(self._RC_N_CAL, delay=0.02)
-        self._threshold_on  = self._rc_baseline * (1 + self._DELTA_ON)
-        self._threshold_off = self._rc_baseline * (1 + self._DELTA_OFF)
+        try:
+            baseline = self._rc_average(self._RC_N_CAL)
+        except Exception as e:
+            logger.warning(f"Sensor [Light RC]: Calibration échouée ({e}) → mode ADC")
+            return
 
-        logger.info(f"Sensor [Light RC]: baseline={self._rc_baseline:.1f} | "
-                    f"seuil_on={self._threshold_on:.1f} | "
-                    f"seuil_off={self._threshold_off:.1f}")
+        if baseline < 10:
+            # Circuit RC absent ou court-circuit → bascule sur ADC
+            logger.warning(
+                f"Sensor [Light RC]: Baseline trop faible ({baseline:.1f}) "
+                f"→ circuit RC probablement absent. Mode ADC activé."
+            )
+            self._rc_calibrated = False
+            return
 
-    def _update_rc(self):
-        """Mise à jour rapide (non-bloquante) de self.is_dark avec hystérésis."""
-        if self._rc_baseline is None:
-            return  # pas encore calibré
+        self._rc_baseline   = baseline
+        self._threshold_on  = baseline * (1 + self._DELTA_ON)
+        self._threshold_off = baseline * (1 + self._DELTA_OFF)
+        self._rc_calibrated = True
 
-        value = self._rc_average(self._RC_N, delay=self._RC_DELAY)
+        logger.info(
+            f"Sensor [Light RC]: baseline={baseline:.1f} | "
+            f"ON>{self._threshold_on:.1f} | OFF<{self._threshold_off:.1f}"
+        )
 
+    def _update_is_dark_via_rc(self):
+        """Met à jour is_dark via RC (avec hystérésis)."""
+        value = self._rc_average(self._RC_N)
         if not self.is_dark and value > self._threshold_on:
             self.is_dark = True
-            logger.info(f"Sensor [Light RC]: 🌑 Obscurité détectée (count={value:.1f})")
+            logger.info(f"Sensor [Light RC]: Nuit (count={value:.0f})")
         elif self.is_dark and value < self._threshold_off:
             self.is_dark = False
-            logger.info(f"Sensor [Light RC]: ☀️  Lumière revenue (count={value:.1f})")
+            logger.info(f"Sensor [Light RC]: Jour (count={value:.0f})")
 
-    # ── Interface publique ──────────────────────────────────────────────
+    # ── Interface publique ─────────────────────────────────────────
 
     def read(self):
         """
-        Retourne la luminosité en lux (0-1000) via ADC.
-        Met aussi à jour self.is_dark via RC-timing.
+        Retourne la luminosité en lux (ADC).
+        Met à jour `is_dark` :
+          - via RC-timing si calibré
+          - via seuil ADC si RC non disponible
         """
         if MOCK_MODE:
-            lux = random.randint(100, 1000)
-            self.is_dark = lux < 200   # simulation : sombre si < 200 lux
+            lux = random.randint(50, 1000)
+            self.is_dark = lux < 200
             logger.debug(f"Sensor [Light] (mock): {lux} lux, is_dark={self.is_dark}")
             return lux
 
-        # Lecture ADC
+        # ── Lecture ADC ──
         lux = 0
         if self._bus:
             try:
@@ -149,15 +165,18 @@ class LightSensor:
                 logger.debug(f"Sensor [Light] ADC: raw={raw} → {lux} lux")
             except Exception as e:
                 logger.error(f"Sensor [Light]: Erreur ADC: {e}")
-                try:
-                    self._init_bus()
-                except Exception:
-                    pass
+                self._init_bus()
 
-        # Lecture RC (non-bloquante si déjà calibré)
-        try:
-            self._update_rc()
-        except Exception as e:
-            logger.warning(f"Sensor [Light RC]: Erreur RC: {e}")
+        # ── is_dark : RC ou ADC ──
+        if self._rc_calibrated:
+            try:
+                self._update_is_dark_via_rc()
+            except Exception as e:
+                logger.warning(f"Sensor [Light RC]: Erreur: {e}")
+                # Fallback ADC si RC crash
+                self.is_dark = lux < self._ADC_DARK_THRESHOLD
+        else:
+            # Pas de RC → seuil ADC simple
+            self.is_dark = lux < self._ADC_DARK_THRESHOLD
 
         return lux

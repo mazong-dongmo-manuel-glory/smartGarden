@@ -22,9 +22,9 @@ class Pump:
     def _init_gpio(self):
         try:
             import RPi.GPIO as GPIO
-            GPIO.setmode(GPIO.BCM)
+            # GPIO.setmode déjà appelé par leds.py
             GPIO.setup(self.pin, GPIO.OUT)
-            GPIO.output(self.pin, GPIO.HIGH)   # Assure relais ouvert au démarrage (pompe OFF)
+            GPIO.output(self.pin, GPIO.HIGH)   # relais ouvert au démarrage (pompe OFF)
             logger.info(f"Actuator [Pump]: GPIO {self.pin} initialisé (relais actif-LOW)")
         except Exception as e:
             logger.error(f"Actuator [Pump]: Impossible d'initialiser GPIO {self.pin}: {e}")

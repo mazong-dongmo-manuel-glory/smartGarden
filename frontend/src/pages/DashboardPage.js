@@ -6,17 +6,17 @@ import StatusCard from '../components/StatusCard';
 import PlantCard from '../components/PlantCard';
 import useMqtt from '../hooks/useMqtt';
 
-// Rain ADC value (0-255) → colour + label
-function rainMeta(rain) {
-    if (rain === null) return { color: 'bg-gray-500', label: '--' };
-    if (rain < 80) return { color: 'bg-green-500', label: 'Sec' };
-    if (rain < 150) return { color: 'bg-yellow-500', label: 'Légère' };
-    return { color: 'bg-red-500', label: 'Forte' };
+// Pluie ADC % → couleur + label
+function rainMeta(pct) {
+    if (pct === null) return { color: 'bg-gray-500', label: 'En attente' };
+    if (pct < 20) return { color: 'bg-green-500', label: 'Sec' };
+    if (pct < 60) return { color: 'bg-yellow-500', label: 'Pluie légère' };
+    return { color: 'bg-blue-500', label: 'Forte pluie' };
 }
 
 export default function DashboardPage() {
     const { isConnected, sensorData, alerts } = useMqtt();
-    const { color: rainColor } = rainMeta(sensorData.rain);
+    const { color: rainColor, label: rainLabel } = rainMeta(sensorData.rainPct);
 
     const fmt = (v, decimals = 0) =>
         v !== null && v !== undefined ? Number(v).toFixed(decimals) : '--';
@@ -78,61 +78,67 @@ export default function DashboardPage() {
                 <section id="sensors-grid" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">Capteurs Environnementaux</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6">
+                        {/* 1 - Température */}
                         <MetricCard
                             title="Température"
                             value={fmt(sensorData.temperature, 1)}
                             unit="°C"
                             icon="fa-temperature-half"
                             color="bg-red-500"
-                            status="Temps Réel"
-                            progress={sensorData.temperature ? (sensorData.temperature / 40) * 100 : 0}
+                            status="Temps réel"
+                            progress={sensorData.temperature ? (sensorData.temperature / 50) * 100 : 0}
                         />
+                        {/* 2 - Humidité Air */}
                         <MetricCard
                             title="Humidité Air"
                             value={fmt(sensorData.humidity)}
                             unit="%"
                             icon="fa-cloud"
                             color="bg-purple-500"
-                            status="Temps Réel"
+                            status="Temps réel"
                             progress={sensorData.humidity || 0}
                         />
+                        {/* 3 - Pluie ADC */}
                         <MetricCard
-                            title="Humidité Sol"
-                            value={fmt(sensorData.moisture)}
+                            title="Pluie"
+                            value={fmt(sensorData.rainPct, 1)}
                             unit="%"
-                            icon="fa-droplet"
-                            color="bg-blue-500"
-                            status="Temps Réel"
-                            progress={sensorData.moisture || 0}
+                            icon="fa-cloud-rain"
+                            color={rainColor}
+                            status={rainLabel}
+                            progress={sensorData.rainPct || 0}
                         />
+                        {/* 4 - Luminosité */}
                         <MetricCard
                             title="Luminosité"
                             value={fmt(sensorData.light)}
                             unit="lux"
                             icon="fa-sun"
                             color="bg-yellow-500"
-                            status="Temps Réel"
+                            status="Temps réel"
                             progress={sensorData.light ? (sensorData.light / 1000) * 100 : 0}
                         />
-                        {/* Rain tile — dynamically coloured */}
+                        {/* 5 - Détection pluie numérique */}
                         <MetricCard
-                            title="Pluie (ADC)"
-                            value={fmt(sensorData.rain)}
-                            unit="/255"
-                            icon="fa-cloud-rain"
-                            color={rainColor}
-                            status={sensorData.rain === null ? 'En attente' : sensorData.rain < 80 ? 'Sec' : sensorData.rain < 150 ? 'Pluie légère' : 'Forte pluie'}
-                            progress={sensorData.rain ? (sensorData.rain / 255) * 100 : 0}
+                            title="Détection Pluie"
+                            value={sensorData.rainDigital === null ? '--'
+                                : sensorData.rainDigital === 0 ? '🌧️' : '☀️'}
+                            unit=""
+                            icon="fa-droplet"
+                            color={sensorData.rainDigital === 0 ? 'bg-blue-500' : 'bg-green-500'}
+                            status={sensorData.rainDigital === null ? 'En attente'
+                                : sensorData.rainDigital === 0 ? 'Pluie détectée' : 'Sec'}
+                            progress={sensorData.rainDigital === 0 ? 100 : 0}
                         />
-                        {/* Water level tile */}
+                        {/* 6 - Jour / Nuit */}
                         <MetricCard
-                            title="Niveau d'eau"
-                            value={fmt(sensorData.waterLevel)}
-                            unit="%"
-                            icon="fa-water"
-                            color={sensorData.waterLevel !== null && sensorData.waterLevel < 20 ? 'bg-red-500' : 'bg-cyan-500'}
-                            status={sensorData.waterLevel !== null && sensorData.waterLevel < 20 ? 'Niveau bas !' : 'Temps Réel'}
-                            progress={sensorData.waterLevel || 0}
+                            title="Éclairage"
+                            value={sensorData.isDark === null ? '--' : sensorData.isDark ? 'Nuit' : 'Jour'}
+                            unit=""
+                            icon={sensorData.isDark ? 'fa-moon' : 'fa-sun'}
+                            color={sensorData.isDark ? 'bg-indigo-500' : 'bg-yellow-400'}
+                            status={sensorData.isDark ? 'Lampe ON' : 'Lampe OFF'}
+                            progress={sensorData.isDark ? 100 : 20}
                         />
                     </div>
                 </section>

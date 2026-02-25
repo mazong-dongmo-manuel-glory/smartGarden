@@ -1,39 +1,66 @@
 from config import SOIL_MOISTURE_LOW
 from utils.logger import logger
 
-class AlertManager:
-    def __init__(self, leds, lcd):
-        self.leds = leds
-        self.lcd = lcd
 
-    def update(self, temp, humidity, moisture, light_level):
+class AlertManager:
+    """
+    Gère les LEDs et l'affichage LCD en fonction des lectures capteurs.
+    Capteurs réels : DHT11 (temp/hum), pluie (ADC %), lumière (jour/nuit).
+    """
+    _FAIL_THRESHOLD = 5
+
+    def __init__(self, leds, lcd):
+        self.leds        = leds
+        self.lcd         = lcd
+        self._fail_count = 0
+
+    def update(self, temp, hum, rain_pct, rain_digital, is_dark):
         """
-        Updates LEDs based on sensor values.
-        - Green: Todo OK
-        - Orange: Warning (e.g. Low Water)
-        - Red: Error (Sensor failure)
+        rain_digital : 0 = pluie détectée, 1 = sec
+        is_dark      : True = nuit → lampe allumée
         """
-        
-        # Check for sensor errors (Red LED)
-        if temp is None or humidity is None or moisture is None:
-            logger.error("Alert: Sensor Failure! LED RED ON.")
-            self.leds.set('red', True)
-            self.leds.set('green', False)
-            self.leds.set('orange', False)
-            self.lcd.display("ERROR", "E01: Sensor")
+        # ── Erreur capteur ────────────────────────────────────────────
+        if temp is None or hum is None:
+            self._fail_count += 1
+            if self._fail_count >= self._FAIL_THRESHOLD:
+                logger.error("Alert: DHT11 Failure!")
+                self.leds.set('red', True)
+                self.leds.set('green', False)
+                self.leds.set('orange', False)
+                self.lcd.display("ERROR", "E01: DHT11")
             return
 
-        # Check for warnings (Orange LED)
-        if moisture < SOIL_MOISTURE_LOW:
-            # Low water warning
+        self._fail_count = 0
+
+        # ── Pluie détectée ───────────────────────────────────────────
+        if rain_digital == 0:                          # 0 = pluie (actif bas)
             self.leds.set('orange', True)
             self.leds.set('green', False)
             self.leds.set('red', False)
-            self.lcd.display(f"T:{temp}C H:{int(humidity)}%", "Warn: Low Water")
+            self.lcd.display(
+                f"T:{temp}C H:{int(hum)}%",
+                f"Pluie {int(rain_pct)}%"
+            )
             return
 
-        # All Normal (Green LED)
+        # ── Humidité air élevée (risque champignons) ─────────────────
+        if hum > 80:
+            self.leds.set('orange', True)
+            self.leds.set('green', False)
+            self.leds.set('red', False)
+            self.lcd.display(
+                f"T:{temp}C H:{int(hum)}%",
+                "Warn: Humidite"
+            )
+            return
+
+        # ── Tout normal ───────────────────────────────────────────────
         self.leds.set('green', True)
         self.leds.set('orange', False)
         self.leds.set('red', False)
-        self.lcd.display(f"T:{temp}C H:{int(humidity)}%", f"Soil:{int(moisture)}%")
+
+        night_label = "Nuit" if is_dark else "Jour"
+        self.lcd.display(
+            f"T:{temp}C H:{int(hum)}%",
+            f"Lux:OK {night_label}"
+        )

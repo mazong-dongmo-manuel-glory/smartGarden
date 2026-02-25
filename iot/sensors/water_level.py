@@ -28,10 +28,11 @@ class WaterLevelSensor:
             logger.error(f"Sensor [Rain]: Impossible d'initialiser le matériel: {e}")
 
     def _read_adc(self):
-        """Lit la valeur analogique brute du canal ADC (0-255)."""
-        command = 0x84 | (self.adc_channel << 4)
+        """Lecture correcte PCF8591 : double-read pour vider le byte périmé."""
+        command = 0x40 | (self.adc_channel & 0x03)   # 0x40 = activer sortie, bits 0-1 = canal
         self._bus.write_byte(self.address, command)
-        return self._bus.read_byte(self.address)
+        self._bus.read_byte(self.address)             # byte périmé
+        return self._bus.read_byte(self.address)      # valeur réelle
 
     def _read_digital(self):
         """Lit l'état numérique du capteur de pluie (0 = pluie détectée)."""
