@@ -5,7 +5,7 @@ MOCK_MODE = True  # Set to False on actual Raspberry Pi
 LOOP_INTERVAL = 5  # Seconds
 
 # --- MQTT Settings ---
-MQTT_BROKER = "test.mosquitto.org"  # Public test broker for now
+MQTT_BROKER = "localhost"   # Broker Mosquitto local sur le Pi
 MQTT_PORT = 1883
 MQTT_USERNAME = None  # Add if needed
 MQTT_PASSWORD = None

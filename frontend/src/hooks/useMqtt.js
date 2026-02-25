@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-const MQTT_BROKER = 'wss://test.mosquitto.org:8081';
+const MQTT_BROKER = 'ws://172.16.206.37:9001'; // Broker Mosquitto local sur le Pi
 
 export default function useMqtt() {
     const clientRef = useRef(null);
