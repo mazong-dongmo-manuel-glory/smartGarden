@@ -4,15 +4,20 @@ from utils.logger import logger
 
 class GrowLight:
     """
-    Lampe de croissance contrôlée via PWM sur GPIO 27 (PIN_GROW_LIGHT).
-    Intensité : 0% = éteint, 100% = pleine puissance.
+    Lampe de croissance / LED sur GPIO 22 (PIN_GROW_LIGHT = LED_PIN du test).
+
+    ON  = lampe allumée (GPIO HIGH)
+    OFF = lampe éteinte (GPIO LOW)
+
+    set_intensity() accepte 0-100 :
+      - 0       → OFF
+      - 1-100   → ON (seuil simple, sans PWM)
     """
-    PWM_FREQ = 100  # Hz
 
     def __init__(self, pin=PIN_GROW_LIGHT):
         self.pin       = pin
-        self.intensity = 0
-        self._pwm      = None
+        self.intensity = 0   # 0 = éteint, 100 = allumé
+        self._gpio_ok  = False
 
         if not MOCK_MODE:
             self._init_gpio()
@@ -20,36 +25,37 @@ class GrowLight:
     def _init_gpio(self):
         try:
             import RPi.GPIO as GPIO
-            GPIO.setmode(GPIO.BCM)
+            # GPIO.setmode déjà appelé par leds.py
             GPIO.setup(self.pin, GPIO.OUT)
-            self._pwm = GPIO.PWM(self.pin, self.PWM_FREQ)
-            self._pwm.start(0)  # éteint au démarrage
-            logger.info(f"Actuator [GrowLight]: PWM initialisé sur GPIO {self.pin} ({self.PWM_FREQ} Hz)")
+            GPIO.output(self.pin, GPIO.LOW)   # éteint au démarrage
+            self._gpio_ok = True
+            logger.info(f"Actuator [GrowLight]: GPIO {self.pin} initialisé (ON/OFF)")
         except Exception as e:
-            logger.error(f"Actuator [GrowLight]: Impossible d'initialiser PWM GPIO {self.pin}: {e}")
-            self._pwm = None
+            logger.error(f"Actuator [GrowLight]: Impossible d'initialiser GPIO {self.pin}: {e}")
 
     def set_intensity(self, level: int):
-        """Définit l'intensité lumineuse (0-100%)."""
+        """
+        Allume (level > 0) ou éteint (level == 0) la lampe.
+        level = 0-100.
+        """
         level = max(0, min(100, int(level)))
         self.intensity = level
-        logger.info(f"Actuator [GrowLight]: Intensité → {level}% (GPIO {self.pin})")
+        state = level > 0
+        logger.info(f"Actuator [GrowLight]: {'ON' if state else 'OFF'} (level={level}%, GPIO {self.pin})")
 
-        if not MOCK_MODE:
-            if self._pwm:
-                try:
-                    self._pwm.ChangeDutyCycle(level)
-                except Exception as e:
-                    logger.error(f"Actuator [GrowLight]: Erreur PWM ChangeDutyCycle: {e}")
-            else:
-                logger.warning("Actuator [GrowLight]: PWM non initialisé, commande ignorée.")
+        if not MOCK_MODE and self._gpio_ok:
+            try:
+                import RPi.GPIO as GPIO
+                GPIO.output(self.pin, GPIO.HIGH if state else GPIO.LOW)
+            except Exception as e:
+                logger.error(f"Actuator [GrowLight]: Erreur GPIO: {e}")
 
     def cleanup(self):
-        """Arrête le PWM proprement."""
         self.set_intensity(0)
-        if not MOCK_MODE and self._pwm:
+        if not MOCK_MODE and self._gpio_ok:
             try:
-                self._pwm.stop()
-                logger.info("Actuator [GrowLight]: PWM arrêté.")
+                import RPi.GPIO as GPIO
+                GPIO.cleanup(self.pin)
+                logger.info(f"Actuator [GrowLight]: GPIO {self.pin} libéré.")
             except Exception as e:
                 logger.error(f"Actuator [GrowLight]: Erreur cleanup: {e}")

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import mqtt from 'mqtt';
 
-const MQTT_BROKER = 'ws://172.16.206.37:9001'; // Broker Mosquitto local sur le Pi
+const MQTT_BROKER = 'ws://172.16.206.37:9090'; // Mosquitto WebSocket — port 9090
 
 export default function useMqtt() {
     const clientRef = useRef(null);
@@ -11,21 +11,13 @@ export default function useMqtt() {
         humidity: null,
         moisture: null,
         light: null,
-        rain: null,   // ADC 0-255 from rain_sensor.py (jardin/sensors/rain)
-        waterLevel: null,   // % from water_level.py (jardin/sensors/soil)
+        rain: null,
+        waterLevel: null,
     });
     const [alerts, setAlerts] = useState([]);
-    const [eventLog, setEventLog] = useState([]); // live MQTT events (max 20)
-
-    // ── accumulate live chart data (last 20 readings) ───────────────────
+    const [eventLog, setEventLog] = useState([]);
     const [chartTemp, setChartTemp] = useState([]);
     const [chartMoisture, setChartMoisture] = useState([]);
-
-    const pushChartPoint = (setter, value) => {
-        if (value == null) return;
-        const ts = new Date().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        setter(prev => [...prev, { time: ts, value }].slice(-20));
-    };
 
     const addEvent = (topic, summary, type = 'info') => {
         const ts = new Date().toLocaleString('fr-CA', {
@@ -35,41 +27,40 @@ export default function useMqtt() {
         setEventLog(prev => [{ ts, topic, summary, type }, ...prev].slice(0, 20));
     };
 
+    const pushChartPoint = (setter, value) => {
+        if (value == null) return;
+        const ts = new Date().toLocaleTimeString('fr-CA', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+        });
+        setter(prev => [...prev, { time: ts, value }].slice(-20));
+    };
+
     useEffect(() => {
-        console.log('Connecting to MQTT broker…');
-        const mqttClient = mqtt.connect(MQTT_BROKER, {
-            clientId: `smart_garden_web_${Math.random().toString(16).substring(2, 8)}`,
+        console.log(`[MQTT] Connexion à ${MQTT_BROKER}…`);
+
+        const client = mqtt.connect(MQTT_BROKER, {
+            clientId: `smart_garden_web_${Math.random().toString(16).slice(2, 8)}`,
             keepalive: 60,
             protocolId: 'MQTT',
             protocolVersion: 4,
             clean: true,
-            reconnectPeriod: 1000,
-            connectTimeout: 30 * 1000,
+            reconnectPeriod: 3000,
+            connectTimeout: 30_000,
         });
 
-        mqttClient.on('connect', () => {
-            console.log('MQTT Connected');
+        client.on('connect', () => {
+            console.log('[MQTT] Connecté sur', MQTT_BROKER);
             setIsConnected(true);
-            addEvent('system', 'Connexion au broker MQTT établie', 'success');
+            addEvent('system', `Broker MQTT connecté (${MQTT_BROKER})`, 'success');
 
-            mqttClient.subscribe('jardin/sensors/+', err => {
-                if (!err) console.log('Subscribed to jardin/sensors/+');
-            });
-            // Alerts
-            mqttClient.subscribe('jardin/alerts', err => {
-                if (!err) console.log('Subscribed to jardin/alerts');
-            });
-            mqttClient.subscribe('jardin/commands/+', err => {
-                if (!err) console.log('Subscribed to jardin/commands/+');
-            });
+            client.subscribe('jardin/sensors/+');
+            client.subscribe('jardin/alerts');
         });
 
-        mqttClient.on('message', (topic, message) => {
-            const payload = message.toString();
-            console.log(`[MQTT] ${topic}: ${payload}`);
-
+        client.on('message', (topic, message) => {
             try {
-                const data = JSON.parse(payload);
+                const data = JSON.parse(message.toString());
+                console.log(`[MQTT] ${topic}:`, data);
 
                 if (topic === 'jardin/sensors/temperature') {
                     setSensorData(prev => ({ ...prev, temperature: data.temperature, humidity: data.humidity }));
@@ -86,44 +77,37 @@ export default function useMqtt() {
                     addEvent(topic, `Lumière ${data.light} lux`, 'info');
 
                 } else if (topic === 'jardin/sensors/water') {
-                    // Payload: { water_level: %, rain: % }
-                    const wl = data.water_level ?? null;
-                    const rain = data.rain ?? null;
-                    setSensorData(prev => ({ ...prev, waterLevel: wl, rain }));
-                    addEvent(topic, `Eau ${wl}% | Pluie ${rain}%`, wl < 20 ? 'warning' : 'info');
+                    setSensorData(prev => ({
+                        ...prev,
+                        waterLevel: data.water_level,
+                        rain: data.rain,
+                    }));
+                    addEvent(topic, `Eau ${data.water_level}% | Pluie ${data.rain}%`,
+                        data.water_level < 20 ? 'warning' : 'info');
 
                 } else if (topic === 'jardin/alerts') {
                     setAlerts(prev => [data, ...prev].slice(0, 5));
                     addEvent(topic, data.message, data.level === 'error' ? 'error' : 'warning');
                 }
-
             } catch (e) {
-                console.error('Failed to parse MQTT message', e);
+                console.error('[MQTT] Parse error:', e);
             }
         });
 
-        mqttClient.on('error', err => {
-            console.error('MQTT Error:', err);
-            mqttClient.end();
-        });
+        client.on('error', err => console.error('[MQTT] Erreur:', err));
+        client.on('close', () => { setIsConnected(false); addEvent('system', 'Déconnecté', 'error'); });
+        client.on('reconnect', () => console.log('[MQTT] Reconnexion…'));
 
-        mqttClient.on('close', () => {
-            setIsConnected(false);
-        });
+        clientRef.current = client;
+        return () => client.end();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-        clientRef.current = mqttClient;
-
-        return () => { mqttClient.end(); };
-    }, []);
-
-    // ── publish helpers ──────────────────────────────────────────────────
+    // ── Commandes ─────────────────────────────────────────────────────
     const publishCommand = (topic, message) => {
-        const c = clientRef.current;
-        if (c && isConnected) {
-            c.publish(topic, JSON.stringify(message));
-            console.log(`[MQTT publish] ${topic}:`, message);
+        if (clientRef.current && isConnected) {
+            clientRef.current.publish(topic, JSON.stringify(message));
         } else {
-            console.warn('MQTT not connected — command not sent');
+            console.warn('[MQTT] Non connecté — commande ignorée');
         }
     };
 
