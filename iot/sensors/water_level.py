@@ -21,8 +21,8 @@ class WaterLevelSensor:
             import smbus
             import RPi.GPIO as GPIO
             self._bus = smbus.SMBus(1)
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.digital_pin, GPIO.IN)
+            # GPIO.setmode déjà appelé par leds.py — pas besoin de le répéter
+            GPIO.setup(self.digital_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             logger.info(f"Sensor [Rain]: SMBus + GPIO{self.digital_pin} initialisés")
         except Exception as e:
             logger.error(f"Sensor [Rain]: Impossible d'initialiser le matériel: {e}")
