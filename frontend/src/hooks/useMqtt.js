@@ -38,6 +38,8 @@ export default function useMqtt() {
     useEffect(() => {
         const client = mqtt.connect(MQTT_BROKER, {
             clientId: `sgarden_${Math.random().toString(16).slice(2, 8)}`,
+            username: 'smartgarden',
+            password: 'smart2024',
             keepalive: 60,
             protocolVersion: 4,
             clean: true,

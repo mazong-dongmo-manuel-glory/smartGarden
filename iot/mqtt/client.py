@@ -25,6 +25,9 @@ class MqttClient:
     def connect(self):
         try:
             logger.info(f"MQTT: Connexion à {MQTT_BROKER}:{MQTT_PORT}…")
+            from config import MQTT_USERNAME, MQTT_PASSWORD
+            if MQTT_USERNAME and MQTT_PASSWORD:
+                self.client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
             self.client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
             self.client.loop_start()
         except Exception as e:

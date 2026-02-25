@@ -7,8 +7,8 @@ LOOP_INTERVAL = 2  # Secondes — cycle rapide pour données temps réel
 # --- MQTT Settings ---
 MQTT_BROKER = "localhost"   # Broker Mosquitto local sur le Pi
 MQTT_PORT = 1883
-MQTT_USERNAME = None  # Add if needed
-MQTT_PASSWORD = None
+MQTT_USERNAME = "smartgarden"
+MQTT_PASSWORD = "smart2024"
 MQTT_CLIENT_ID = "smart_garden_raspberry_pi"
 
 # --- Topics ---
