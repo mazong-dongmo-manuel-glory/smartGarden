@@ -20,6 +20,7 @@ class AlertManager:
         is_dark      : True = nuit → lampe allumée
         has_anomaly  : True = Erreur critique détectée par l'IA
         """
+        has_anomaly = False
         # ── Erreur capteur ────────────────────────────────────────────
         if temp is None or hum is None:
             self._fail_count += 1
