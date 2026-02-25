@@ -52,11 +52,18 @@ const Header = () => {
                         <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                         <span className="text-sm text-gray-300">Connecté</span>
                     </div>
-                    <img
-                        src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
-                        alt="User"
-                        className="w-9 h-9 rounded-full border-2 border-primary"
-                    />
+
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('smartgarden_auth');
+                            window.location.href = '/';
+                        }}
+                        className="w-9 h-9 flex items-center justify-center bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 rounded-lg transition-colors group ml-2"
+                        title="Déconnexion"
+                    >
+                        <i className="fa-solid fa-power-off text-gray-400 group-hover:text-white" />
+                    </button>
+
                     {/* Hamburger */}
                     <button
                         onClick={() => setMenuOpen(o => !o)}

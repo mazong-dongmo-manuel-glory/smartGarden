@@ -1,60 +1,61 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+        // Static password check matching the MQTT one for simplicity
+        if (password === 'smart2024') {
+            localStorage.setItem('smartgarden_auth', 'true');
+            navigate('/dashboard');
+        } else {
+            setError('Mot de passe incorrect');
+        }
+    };
+
     return (
-        <div className="bg-gray-950 min-h-screen flex items-center justify-center p-4 font-sans text-gray-100">
-            <div className="w-full max-w-md bg-gray-900 rounded-2xl p-8 border border-gray-800 shadow-xl">
+        <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
+
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center mx-auto mb-4">
-                        <i className="fa-solid fa-seedling text-white text-3xl"></i>
+                    <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i className="fa-solid fa-leaf text-3xl text-blue-500"></i>
                     </div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Bienvenue sur AgriSmart</h1>
-                    <p className="text-gray-400 text-sm">Connectez-vous pour gérer votre jardin</p>
+                    <h1 className="text-2xl font-bold text-white mb-2">Smart Garden</h1>
+                    <p className="text-sm text-gray-400">Veuillez vous authentifier pour accéder au système.</p>
                 </div>
 
-                <form className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Email</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                                <i className="fa-solid fa-envelope"></i>
-                            </span>
-                            <input
-                                type="email"
-                                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                                placeholder="exemple@email.com"
-                            />
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Mot de passe système</label>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded-lg text-center">
+                            {error}
                         </div>
-                    </div>
+                    )}
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">Mot de passe</label>
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                                <i className="fa-solid fa-lock"></i>
-                            </span>
-                            <input
-                                type="password"
-                                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" className="w-4 h-4 rounded bg-gray-800 border-gray-700 text-primary focus:ring-primary" />
-                            <span className="text-gray-400">Se souvenir de moi</span>
-                        </label>
-                        <a href="#" className="text-primary hover:text-primary/80 transition">Mot de passe oublié ?</a>
-                    </div>
-
-                    <Link to="/dashboard" className="block text-center w-full bg-primary hover:bg-secondary text-white font-semibold py-3 rounded-lg transition duration-300">
-                        Se Connecter
-                    </Link>
+                    <button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors flex justify-center items-center gap-2"
+                    >
+                        <i className="fa-solid fa-right-to-bracket"></i>
+                        Connexion
+                    </button>
                 </form>
-
             </div>
         </div>
     );
