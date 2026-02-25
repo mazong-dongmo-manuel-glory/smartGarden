@@ -8,27 +8,15 @@ class LightingManager:
 
     def check(self):
         """
-        Implements Schedule:
-        - 5h - 12h: High Intensity (100%)
-        - 12h - 17h: Medium Intensity (50%)
-        - 17h - 5h: OFF (0%)
+        Planning éclairage :
+        - 5h → 17h : Jour → lumière naturelle → lampe OFF
+        - 17h → 5h : Nuit → lampe ON (100%)
         """
-        now = datetime.datetime.now()
-        hour = now.hour
+        hour = __import__('datetime').datetime.now().hour
 
-        intensity = 0
-        
-        if LIGHT_SCHEDULE_HIGH_START <= hour < LIGHT_SCHEDULE_MED_START:
-            intensity = 100
-            mode = "Morning (High)"
-        elif LIGHT_SCHEDULE_MED_START <= hour < LIGHT_SCHEDULE_OFF_START:
-            intensity = 50
-            mode = "Afternoon (Medium)"
-        else:
-            intensity = 0
-            mode = "Night (OFF)"
+        intensity = 100 if (hour >= 17 or hour < 5) else 0
+        mode      = "Nuit (ON)" if intensity == 100 else "Jour (OFF)"
 
-        current_intensity = self.grow_light.intensity
-        if current_intensity != intensity:
-            logger.info(f"Lighting: Time is {hour}h ({mode}). Setting light to {intensity}%.")
+        if self.grow_light.intensity != intensity:
+            logger.info(f"Lighting: {hour}h → {mode} → {intensity}%")
             self.grow_light.set_intensity(intensity)

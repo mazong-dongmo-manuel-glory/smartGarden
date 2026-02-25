@@ -26,6 +26,16 @@ from mqtt.client import MqttClient
 def main():
     logger.info("=== Smart Garden — Démarrage ===")
 
+    # ── GPIO : mode global avant toute initialisation matérielle ──────
+    if not __import__('config').MOCK_MODE:
+        try:
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)   # éviter les warnings "already in use"
+            logger.info("GPIO: mode BCM activé")
+        except ImportError:
+            pass   # non-Pi (dev)
+
     # ── Capteurs ───────────────────────────────────────────────────────
     temp_sensor  = TemperatureSensor()       # DHT11 → temp + humidité
     light_sensor = LightSensor()             # LDR ADC + RC → lux + is_dark
