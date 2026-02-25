@@ -1,3 +1,7 @@
 paho-mqtt
 scikit-learn
 pandas
+smbus2
+adafruit-circuitpython-dht
+RPi.GPIO
+RPLCD
