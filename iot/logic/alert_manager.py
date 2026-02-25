@@ -14,10 +14,11 @@ class AlertManager:
         self.lcd         = lcd
         self._fail_count = 0
 
-    def update(self, temp, hum, rain_pct, rain_digital, is_dark):
+    def update(self, temp, hum, rain_pct, rain_digital, is_dark, has_anomaly=False):
         """
         rain_digital : 0 = pluie détectée, 1 = sec
         is_dark      : True = nuit → lampe allumée
+        has_anomaly  : True = Erreur critique détectée par l'IA
         """
         # ── Erreur capteur ────────────────────────────────────────────
         if temp is None or hum is None:
@@ -31,6 +32,14 @@ class AlertManager:
             return
 
         self._fail_count = 0
+
+        # ── Anomalie IA ──────────────────────────────────────────────
+        if has_anomaly:
+            self.leds.set('red', True)
+            self.leds.set('green', False)
+            self.leds.set('orange', False)
+            self.lcd.display("ALERTE CRITIQUE", "Anomalie IA !")
+            return
 
         # ── Pluie détectée ───────────────────────────────────────────
         if rain_pct < 150:                           # < 150 = Pluie (actif bas)
@@ -59,8 +68,11 @@ class AlertManager:
         self.leds.set('orange', False)
         self.leds.set('red', False)
 
+        import datetime
+        current_time = datetime.datetime.now().strftime("%H:%M")
         night_label = "Nuit" if is_dark else "Jour"
+        
         self.lcd.display(
-            f"T:{temp}C H:{int(hum)}%",
-            f"Lux:OK {night_label}"
+            f"{current_time} T:{temp}C",
+            f"H:{int(hum)}% {night_label}"
         )

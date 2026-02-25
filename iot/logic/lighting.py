@@ -31,13 +31,21 @@ class LightingManager:
 
         """
         Planning éclairage automatique :
-        - 5h → 17h : Jour → lumière naturelle → lampe OFF
-        - 17h → 5h : Nuit → lampe ON (100%)
+        - 5h → 12h : Matin (Intense) → lampe ON (100%)
+        - 12h → 17h : Après-midi (Modéré) → lampe ON (50%)
+        - 17h → 5h : Nuit (OFF) → lampe OFF (0%)
         """
         hour = datetime.datetime.now().hour
 
-        intensity = 100 if (hour >= 17 or hour < 5) else 0
-        mode      = "Nuit (ON)" if intensity == 100 else "Jour (OFF)"
+        if 5 <= hour < 12:
+            intensity = 100
+            mode = "Matin (Intense)"
+        elif 12 <= hour < 17:
+            intensity = 50
+            mode = "Après-midi (Modéré)"
+        else:
+            intensity = 0
+            mode = "Nuit (OFF)"
 
         if self.grow_light.intensity != intensity:
             logger.info(f"Lighting: {hour}h → {mode} → {intensity}%")

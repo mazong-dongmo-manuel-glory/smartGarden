@@ -105,16 +105,19 @@ def main():
 
             # 3. IA anomalie
             alert_msg = None
-            if anomaly.check(temp, hum, rain_pct, lux):
+            has_anomaly = anomaly.check(temp, hum, rain_pct, lux)
+            if has_anomaly:
                 logger.warning("Anomalie IA détectée!")
-                leds.set('red', True)
+                # leds.set('red', True)  # Désormais géré par alert_manager
                 alert_msg = {"message": "Anomalie IA détectée", "level": "error"}
 
-            # 4. Pompe manuelle (auto-irrigation désactivée sans capteur de sol)
-            #    irrigation.check() est gardé pour la commande manuelle via MQTT
+            # 4. Pompe et Arrosage Automatique
+            # Conversion de la valeur ADC pluie brute (255=sec, 0=eau) en % d'humidité du sol
+            virtual_moisture = ((255.0 - rain_pct) / 255.0) * 100.0
+            irrigation.check(virtual_moisture)
 
             # 5. Alertes LEDs + LCD
-            alerts.update(temp, hum, rain_pct, rain_digital, light_sensor.is_dark)
+            alerts.update(temp, hum, rain_pct, rain_digital, light_sensor.is_dark, has_anomaly)
 
             # 6. Sauvegarde
             db.save_reading(temp, hum, rain_pct, lux, None)
