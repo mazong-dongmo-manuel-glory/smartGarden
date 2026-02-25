@@ -41,38 +41,38 @@ class AlertManager:
             self.lcd.display("ALERTE CRITIQUE", "Anomalie IA !")
             return
 
-        # ── Pluie détectée ───────────────────────────────────────────
-        if rain_pct < 150:                           # < 150 = Pluie (actif bas)
+        # ── Gestion de l'Humidité du Sol / Pluie ─────────────────────
+        # Valeurs ADC: 255 = Sec, ~120 = Humide, < 80 = Trempé
+        
+        if rain_pct >= 150:
+            # SEC -> ROUGE
+            self.leds.set('red', True)
+            self.leds.set('orange', False)
+            self.leds.set('green', False)
+            water_status_msg = "Alerte: Sec"
+        elif rain_pct < 80:
+            # TROP MOUILLÉ -> ORANGE (Avertissement)
+            self.leds.set('red', False)
             self.leds.set('orange', True)
             self.leds.set('green', False)
-            self.leds.set('red', False)
-            self.lcd.display(
-                f"T:{temp}C H:{int(hum)}%",
-                f"Pluie: {int(rain_pct)}/255"
-            )
-            return
-
-        # ── Humidité air élevée (risque champignons) ─────────────────
-        if hum > 80:
-            self.leds.set('orange', True)
-            self.leds.set('green', False)
-            self.leds.set('red', False)
-            self.lcd.display(
-                f"T:{temp}C H:{int(hum)}%",
-                "Warn: Humidite"
-            )
-            return
-
-        # ── Tout normal ───────────────────────────────────────────────
-        self.leds.set('green', True)
-        self.leds.set('orange', False)
-        self.leds.set('red', False)
+            water_status_msg = "Alerte: Trempe"
+        else:
+            # MOYENNEMENT MOUILLÉ (80 à 149) -> VERT (Idéal)
+            # Vérifier si l'humidité de l'air n'est pas trop critique pour gâcher le vert
+            if hum > 85:
+                self.leds.set('orange', True)
+                self.leds.set('green', False)
+                water_status_msg = "Warn: Air Humide"
+            else:
+                self.leds.set('red', False)
+                self.leds.set('orange', False)
+                self.leds.set('green', True)
+                water_status_msg = "Sol: Parfait"
 
         import datetime
         current_time = datetime.datetime.now().strftime("%H:%M")
-        night_label = "Nuit" if is_dark else "Jour"
         
         self.lcd.display(
             f"{current_time} T:{temp}C",
-            f"H:{int(hum)}% {night_label}"
+            f"{water_status_msg}"
         )
