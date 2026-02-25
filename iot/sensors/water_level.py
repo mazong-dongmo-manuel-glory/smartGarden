@@ -57,7 +57,7 @@ class WaterLevelSensor:
 
         try:
             raw = self._read_adc_raw()
-            label = "Sec" if raw < 80 else ("Pluie légère" if raw < 150 else "Forte pluie")
+            label = "Sec" if raw >= 150 else ("Pluie légère" if raw >= 80 else "Forte pluie")
             logger.debug(f"Sensor [Rain]: {raw}/255 → {label}")
             return raw
         except Exception as e:

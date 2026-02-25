@@ -33,13 +33,13 @@ class AlertManager:
         self._fail_count = 0
 
         # ── Pluie détectée ───────────────────────────────────────────
-        if rain_digital == 0:                          # 0 = pluie (actif bas)
+        if rain_pct < 150:                           # < 150 = Pluie (actif bas)
             self.leds.set('orange', True)
             self.leds.set('green', False)
             self.leds.set('red', False)
             self.lcd.display(
                 f"T:{temp}C H:{int(hum)}%",
-                f"Pluie {int(rain_pct)}%"
+                f"Pluie: {int(rain_pct)}/255"
             )
             return
 

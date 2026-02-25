@@ -101,9 +101,13 @@ export default function useMqtt() {
     const setLightIntensity = (value) =>
         publishCommand('jardin/commands/light', { command: 'SET_INTENSITY', value });
 
-    // Pompe non disponible — stub pour compatibilité SettingPage
-    const startWatering = () => console.warn('Pompe non disponible');
-    const stopWatering = () => console.warn('Pompe non disponible');
+    const startWatering = (duration = 10) => {
+        publishCommand('jardin/commands/water', { command: 'START_WATERING', duration });
+    };
+
+    const stopWatering = () => {
+        publishCommand('jardin/commands/water', { command: 'STOP_WATERING' });
+    };
 
     return {
         isConnected, sensorData, alerts, eventLog,

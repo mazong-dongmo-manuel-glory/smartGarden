@@ -6,12 +6,12 @@ import StatusCard from '../components/StatusCard';
 import PlantCard from '../components/PlantCard';
 import useMqtt from '../hooks/useMqtt';
 
-// Pluie valeur brute ADC (0-255) → couleur + label
+// Pluie valeur brute ADC (0-255) : valeur ÉLEVÉE = SEC
 function rainMeta(rawVal) {
     if (rawVal === null) return { color: 'bg-gray-500', label: 'En attente' };
-    if (rawVal < 80) return { color: 'bg-green-500', label: 'Sec' };
-    if (rawVal < 150) return { color: 'bg-yellow-500', label: 'Pluie légère' };
-    return { color: 'bg-blue-500', label: 'Forte pluie' };
+    if (rawVal >= 150) return { color: 'bg-green-500', label: 'Sec' };
+    if (rawVal >= 80) return { color: 'bg-blue-400', label: 'Pluie légère' };
+    return { color: 'bg-blue-600', label: 'Forte pluie' };
 }
 
 export default function DashboardPage() {
@@ -106,7 +106,7 @@ export default function DashboardPage() {
                             icon="fa-cloud-rain"
                             color={rainColor}
                             status={rainLabel}
-                            progress={sensorData.rainPct ? (sensorData.rainPct / 255) * 100 : 0}
+                            progress={sensorData.rainPct !== null ? ((255 - sensorData.rainPct) / 255) * 100 : 0}
                         />
                         {/* 4 - Luminosité */}
                         <MetricCard
@@ -117,18 +117,6 @@ export default function DashboardPage() {
                             color="bg-yellow-500"
                             status="Temps réel"
                             progress={sensorData.light ? (sensorData.light / 1000) * 100 : 0}
-                        />
-                        {/* 5 - Détection pluie numérique */}
-                        <MetricCard
-                            title="Détection Pluie"
-                            value={sensorData.rainDigital === null ? '--'
-                                : sensorData.rainDigital === 0 ? '🌧️' : '☀️'}
-                            unit=""
-                            icon="fa-droplet"
-                            color={sensorData.rainDigital === 0 ? 'bg-blue-500' : 'bg-green-500'}
-                            status={sensorData.rainDigital === null ? 'En attente'
-                                : sensorData.rainDigital === 0 ? 'Pluie détectée' : 'Sec'}
-                            progress={sensorData.rainDigital === 0 ? 100 : 0}
                         />
                         {/* 6 - Jour / Nuit */}
                         <MetricCard
@@ -148,9 +136,7 @@ export default function DashboardPage() {
                     <h2 className="text-2xl font-bold mb-6">État des Plants</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                         <PlantCard name="Haricot #1" type="Capsule K-Cup" growthDay={8} height={12} health="Excellente" />
-                        <PlantCard name="Haricot #2" type="Capsule K-Cup" growthDay={8} height={10} health="Bonne" />
-                        <PlantCard name="Haricot #3" type="Capsule K-Cup" growthDay={8} height={14} health="Excellente" />
-                        <PlantCard name="Haricot #4" type="Capsule K-Cup" growthDay={8} height={11} health="Bonne" />
+
                     </div>
                 </section>
 
