@@ -35,7 +35,7 @@ class AlertManager:
 
         # ── Anomalie IA ──────────────────────────────────────────────
         if has_anomaly:
-            self.leds.set('red', True)
+            #self.leds.set('red', True)
             self.leds.set('green', False)
             self.leds.set('orange', False)
             self.lcd.display("ALERTE CRITIQUE", "Anomalie IA !")
