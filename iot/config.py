@@ -22,20 +22,18 @@ TOPIC_COMMANDS_WATER = f"{TOPIC_PREFIX}/commands/water"
 TOPIC_COMMANDS_LIGHT = f"{TOPIC_PREFIX}/commands/light"
 
 # --- GPIO Pins (BCM Mode) ---
-PIN_PUMP       = 18   # Relais pompe → GPIO 18
-PIN_GROW_LIGHT = 22   # Lampe de croissance / LED → GPIO 22 (identique LED_PIN du test)
+PIN_PUMP       = 17   # Relais pompe → GPIO 17 (test confirmé)
+PIN_GROW_LIGHT = 22   # Lampe de croissance → GPIO 22
 PIN_LED_GREEN  = 16
 PIN_LED_ORANGE = 6
 PIN_LED_RED    = 5
 PIN_DHT        = 4    # DHT11 → GPIO 4
-RAIN_PIN       = 17   # Capteur pluie numérique → GPIO 17
-PIN_LDR_RC     = 27   # LDR RC-timing → GPIO 27 (identique SENSOR_PIN du test)
+PIN_LDR_RC     = 27   # LDR RC-timing → GPIO 27
 
 # --- ADC PCF8591 (I2C) ---
-ADC_ADDRESS = 0x4B        # Adresse I2C du PCF8591
+ADC_ADDRESS      = 0x4B   # Adresse I2C du PCF8591
 RAIN_ADC_CHANNEL = 0      # A0 → Pluie (analogique)
-PIN_SOIL = 1              # A1 → Humidité du sol
-PIN_LDR = 2               # A2 → Luminosité (si branché)
+PIN_LDR          = 2      # A2 → Luminosité
 
 # --- Thresholds ---
 SOIL_MOISTURE_LOW = 30  # %

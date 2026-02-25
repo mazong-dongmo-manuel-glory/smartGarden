@@ -73,7 +73,7 @@ export default function useMqtt() {
                         rainDigital: data.rain_digital,
                     }));
                     const label = data.rain_digital === 0 ? '🌧️ Pluie détectée' : '☀️ Sec';
-                    addEvent(topic, `${data.rain_pct}% | ${label}`,
+                    addEvent(topic, `${data.rain_pct}/255 | ${label}`,
                         data.rain_digital === 0 ? 'warning' : 'info');
 
                 } else if (topic === 'jardin/alerts') {

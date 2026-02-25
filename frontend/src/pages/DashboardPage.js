@@ -6,11 +6,11 @@ import StatusCard from '../components/StatusCard';
 import PlantCard from '../components/PlantCard';
 import useMqtt from '../hooks/useMqtt';
 
-// Pluie ADC % → couleur + label
-function rainMeta(pct) {
-    if (pct === null) return { color: 'bg-gray-500', label: 'En attente' };
-    if (pct < 20) return { color: 'bg-green-500', label: 'Sec' };
-    if (pct < 60) return { color: 'bg-yellow-500', label: 'Pluie légère' };
+// Pluie valeur brute ADC (0-255) → couleur + label
+function rainMeta(rawVal) {
+    if (rawVal === null) return { color: 'bg-gray-500', label: 'En attente' };
+    if (rawVal < 80) return { color: 'bg-green-500', label: 'Sec' };
+    if (rawVal < 150) return { color: 'bg-yellow-500', label: 'Pluie légère' };
     return { color: 'bg-blue-500', label: 'Forte pluie' };
 }
 
@@ -101,12 +101,12 @@ export default function DashboardPage() {
                         {/* 3 - Pluie ADC */}
                         <MetricCard
                             title="Pluie"
-                            value={fmt(sensorData.rainPct, 1)}
-                            unit="%"
+                            value={fmt(sensorData.rainPct)}
+                            unit="/255"
                             icon="fa-cloud-rain"
                             color={rainColor}
                             status={rainLabel}
-                            progress={sensorData.rainPct || 0}
+                            progress={sensorData.rainPct ? (sensorData.rainPct / 255) * 100 : 0}
                         />
                         {/* 4 - Luminosité */}
                         <MetricCard

@@ -62,14 +62,13 @@ class LightSensor:
 
     def _read_adc_raw(self):
         """
-        Lecture correcte du PCF8591 :
-        - Commande : 0x40 (activer sortie DAC) | numéro canal (0-3)
-        - Double lecture : premier byte = valeur précédente (stale) → ignoré
+        Formule identique au code de test : 0x84 | (channel << 4).
+        Double-read pour éliminer le byte périmé.
         """
-        command = 0x40 | (self.channel & 0x03)
+        command = 0x84 | (self.channel << 4)
         self._bus.write_byte(self.address, command)
-        self._bus.read_byte(self.address)           # byte périmé
-        return self._bus.read_byte(self.address)    # valeur réelle
+        self._bus.read_byte(self.address)          # byte périmé
+        return self._bus.read_byte(self.address)   # valeur réelle
 
     # ── RC-timing ─────────────────────────────────────────────────
 
