@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
         e.preventDefault();
-        // Static password check matching the MQTT one for simplicity
-        if (password === 'smart2024') {
+        // Static check matching the MQTT one for simplicity
+        if (username === 'smartgarden' && password === 'smart2024') {
             localStorage.setItem('smartgarden_auth', 'true');
             navigate('/dashboard');
         } else {
-            setError('Mot de passe incorrect');
+            setError('Identifiant ou mot de passe incorrect');
         }
     };
 
@@ -30,6 +31,17 @@ export default function LoginPage() {
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Identifiant (Login)</label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            placeholder="admin"
+                            required
+                        />
+                    </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-2">Mot de passe système</label>
                         <input
