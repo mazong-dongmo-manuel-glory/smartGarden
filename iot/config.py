@@ -1,7 +1,7 @@
 import os
 
 # --- General Settings ---
-MOCK_MODE = True  # Set to False on actual Raspberry Pi
+MOCK_MODE = False  # False = Raspberry Pi réel | True = simulation PC
 LOOP_INTERVAL = 5  # Seconds
 
 # --- MQTT Settings ---
@@ -21,7 +21,7 @@ TOPIC_COMMANDS_WATER = f"{TOPIC_PREFIX}/commands/water"
 TOPIC_COMMANDS_LIGHT = f"{TOPIC_PREFIX}/commands/light"
 
 # --- GPIO Pins (BCM Mode) ---
-PIN_PUMP = 17       
+PIN_PUMP = 18       # Relais pompe → GPIO 18 (GPIO 17 réservé au capteur pluie)
 PIN_GROW_LIGHT = 27
 PIN_LED_GREEN = 16
 PIN_LED_ORANGE = 6

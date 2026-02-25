@@ -7,12 +7,12 @@ bus = smbus.SMBus(1)
 addr = 0x4B  # Adresse I2C du PCF8591 (config.py: ADC_ADDRESS)
 
 # --- LEDs (BCM GPIO, selon config.py) ---
-# PIN_LED_GREEN  = 22
-# PIN_LED_ORANGE = 23
-# PIN_LED_RED    = 24
-led_green  = LED(22)
-led_orange = LED(23)
-led_red    = LED(24)
+# PIN_LED_GREEN  = 16
+# PIN_LED_ORANGE =  6
+# PIN_LED_RED    =  5
+led_green  = LED(16)
+led_orange = LED(6)
+led_red    = LED(5)
 
 def read_adc(channel):
     """Lit la valeur analogique du canal ADC du PCF8591."""

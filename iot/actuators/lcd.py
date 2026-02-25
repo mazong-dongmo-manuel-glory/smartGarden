@@ -29,25 +29,33 @@ class Lcd:
     # ------------------------------------------------------------------
 
     def _init_lcd(self):
-        """Initialise l'écran LCD via RPLCD en mode I2C."""
-        try:
-            from RPLCD.i2c import CharLCD
-            self._lcd = CharLCD(
-                i2c_expander='PCF8574',
-                address=self.address,
-                port=self.port,
-                cols=LCD_COLS,
-                rows=LCD_ROWS,
-                dotsize=8,
-                charmap='A02',
-                auto_linebreaks=False,
-                backlight_enabled=True,
-            )
-            self._lcd.clear()
-            logger.info(f"Actuator [LCD]: Écran initialisé (adresse={hex(self.address)}, {LCD_COLS}x{LCD_ROWS})")
-        except Exception as e:
-            logger.error(f"Actuator [LCD]: Impossible d'initialiser l'écran: {e}")
-            self._lcd = None
+        """Initialise l'écran LCD via RPLCD en mode I2C.
+
+        Essaie d'abord l'adresse configurée (0x27), puis tente 0x3F
+        (adresse alternative fréquente selon le fabricant du module I2C).
+        """
+        from RPLCD.i2c import CharLCD
+        candidates = [self.address, 0x3F if self.address != 0x3F else 0x27]
+        for addr in candidates:
+            try:
+                self._lcd = CharLCD(
+                    i2c_expander='PCF8574',
+                    address=addr,
+                    port=self.port,
+                    cols=LCD_COLS,
+                    rows=LCD_ROWS,
+                    dotsize=8,
+                    auto_linebreaks=True,   # évite les problèmes de curseur
+                    backlight_enabled=True,
+                )
+                self._lcd.clear()
+                self.address = addr  # mémorise l'adresse qui a fonctionné
+                logger.info(f"Actuator [LCD]: Écran initialisé (adresse={hex(addr)}, {LCD_COLS}x{LCD_ROWS})")
+                return
+            except Exception as e:
+                logger.warning(f"Actuator [LCD]: Adresse {hex(addr)} échouée: {e}")
+        logger.error("Actuator [LCD]: Impossible d'initialiser l'écran sur 0x27 et 0x3F")
+        self._lcd = None
 
     # ------------------------------------------------------------------
     # API publique
@@ -155,9 +163,15 @@ class Lcd:
             logger.warning("Actuator [LCD]: Écran non initialisé, écriture ignorée.")
             return
         try:
-            self._lcd.home()
-            self._lcd.write_string(line1)
+            self._lcd.clear()           # efface les caractères fantômes
+            self._lcd.home()            # curseur en (0,0)
+            self._lcd.write_string(line1[:LCD_COLS])   # ligne 1
             self._lcd.cursor_pos = (1, 0)
-            self._lcd.write_string(line2)
+            self._lcd.write_string(line2[:LCD_COLS])   # ligne 2
         except Exception as e:
             logger.error(f"Actuator [LCD]: Erreur d'écriture: {e}")
+            # Tentative de réinitialisation
+            try:
+                self._init_lcd()
+            except Exception:
+                pass
