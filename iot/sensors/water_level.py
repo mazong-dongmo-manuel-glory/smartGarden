@@ -1,63 +1,69 @@
 import random
-from config import MOCK_MODE, ADC_ADDRESS, RAIN_ADC_CHANNEL, RAIN_PIN
+from config import MOCK_MODE, ADC_ADDRESS, RAIN_ADC_CHANNEL
 from utils.logger import logger
+
 
 class WaterLevelSensor:
     """
-    Capteur de pluie / niveau d'eau.
-    - Lecture analogique via PCF8591 ADC (I2C, 0x4B), canal A0 → intensité de pluie.
-    - Lecture numérique via RPi.GPIO, pin 17 → détection de pluie (0 = pluie).
+    Capteur de pluie — PCF8591 canal A0.
+    Formule ADC identique au code de test : 0x84 | (channel << 4)
+    Retourne la valeur brute 0-255 :
+      < 80  → sec (vert)
+      80-149 → pluie légère (jaune)
+      >= 150 → forte pluie (rouge)
+    GPIO 17 est réservé à la pompe — aucun GPIO numérique ici.
     """
-    def __init__(self, adc_channel=RAIN_ADC_CHANNEL, address=ADC_ADDRESS, digital_pin=RAIN_PIN):
+
+    def __init__(self, adc_channel=RAIN_ADC_CHANNEL, address=ADC_ADDRESS):
         self.adc_channel = adc_channel
-        self.address = address
-        self.digital_pin = digital_pin
-        self._bus = None
+        self.address     = address
+        self._bus        = None
+
         if not MOCK_MODE:
             self._init_hardware()
 
     def _init_hardware(self):
         try:
             import smbus
-            import RPi.GPIO as GPIO
             self._bus = smbus.SMBus(1)
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup(self.digital_pin, GPIO.IN)
-            logger.info(f"Sensor [Rain]: SMBus + GPIO{self.digital_pin} initialisés")
+            logger.info(f"Sensor [Rain]: SMBus initialisé (A{self.adc_channel})")
         except Exception as e:
-            logger.error(f"Sensor [Rain]: Impossible d'initialiser le matériel: {e}")
+            logger.error(f"Sensor [Rain]: Impossible d'initialiser SMBus: {e}")
 
-    def _read_adc(self):
-        """Lit la valeur analogique brute du canal ADC (0-255)."""
+    def _read_adc_raw(self):
+        """
+        Formule identique au code de test :
+          command = 0x84 | (channel << 4)
+        Double-read pour vider le byte périmé (PCF8591).
+        """
         command = 0x84 | (self.adc_channel << 4)
         self._bus.write_byte(self.address, command)
-        return self._bus.read_byte(self.address)
+        self._bus.read_byte(self.address)           # byte périmé
+        return self._bus.read_byte(self.address)    # valeur réelle (0-255)
 
     def _read_digital(self):
-        """Lit l'état numérique du capteur de pluie (0 = pluie détectée)."""
-        import RPi.GPIO as GPIO
-        return GPIO.input(self.digital_pin)
+        """GPIO 17 = pompe → stub retourne 1 (sec)."""
+        return 1
 
     def read(self):
-        """
-        Retourne un pourcentage d'eau / intensité de pluie (0-100%).
-        0% = sec, 100% = saturation.
-        """
+        """Retourne la valeur brute ADC 0-255."""
         if MOCK_MODE:
-            level = round(random.uniform(0.0, 100.0), 1)
-            logger.debug(f"Sensor [Rain] (mock): {level}%")
-            return level
-        else:
+            raw = random.randint(0, 255)
+            logger.debug(f"Sensor [Rain] (mock): {raw}/255")
+            return raw
+
+        if not self._bus:
+            return 0
+
+        try:
+            raw = self._read_adc_raw()
+            label = "Sec" if raw >= 150 else ("Pluie légère" if raw >= 80 else "Forte pluie")
+            logger.debug(f"Sensor [Rain]: {raw}/255 → {label}")
+            return raw
+        except Exception as e:
+            logger.error(f"Sensor [Rain]: Erreur: {e}")
             try:
-                raw = self._read_adc()
-                # Plus la valeur est élevée, plus il y a d'eau sur le capteur
-                level = round((raw / 255.0) * 100, 1)
-                digital_state = self._read_digital()
-                if digital_state == 0:
-                    logger.debug(f"Sensor [Rain]: 🌧️ Pluie détectée ! ADC={raw}, Niveau={level}%")
-                else:
-                    logger.debug(f"Sensor [Rain]: ☀️ Pas de pluie. ADC={raw}, Niveau={level}%")
-                return level
-            except Exception as e:
-                logger.error(f"Sensor [Rain]: Erreur de lecture: {e}")
-                return 0
+                self._init_hardware()
+            except Exception:
+                pass
+            return 0

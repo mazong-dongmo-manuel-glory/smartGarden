@@ -6,30 +6,51 @@ import StatusCard from '../components/StatusCard';
 import PlantCard from '../components/PlantCard';
 import useMqtt from '../hooks/useMqtt';
 
+// Pluie valeur brute ADC (0-255) : valeur ÉLEVÉE = SEC
+function rainMeta(rawVal) {
+    if (rawVal === null) return { color: 'bg-gray-500', label: 'En attente', icon: 'fa-spinner' };
+    if (rawVal >= 150) return { color: 'bg-green-500', label: 'Sec', icon: 'fa-sun' };
+    if (rawVal >= 80) return { color: 'bg-blue-400', label: 'Pluie légère', icon: 'fa-cloud-rain' };
+    return { color: 'bg-blue-600', label: 'Forte pluie', icon: 'fa-cloud-showers-heavy' };
+}
+
 export default function DashboardPage() {
     const { isConnected, sensorData, alerts } = useMqtt();
+    const { color: rainColor, label: rainLabel, icon: rainIcon } = rainMeta(sensorData.rainPct);
+
+    const fmt = (v, decimals = 0) =>
+        v !== null && v !== undefined ? Number(v).toFixed(decimals) : '--';
 
     return (
         <div className="bg-gray-950 text-gray-100 font-sans min-h-screen">
             <Header />
 
-            <main id="main-content" className="max-w-[1440px] mx-auto px-8 py-8">
+            <main id="main-content" className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-x-hidden">
 
                 {/* Hero Status */}
                 <section id="hero-status" className="mb-8">
-                    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 border border-gray-700">
+                    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-4 sm:p-8 border border-gray-700">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-3xl font-bold mb-2">État du Système</h2>
-                                <p className="text-gray-400">Surveillance en temps réel - {isConnected ? "Connecté au Broker MQTT" : "Déconnecté"}</p>
+                                <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">État du Système</h2>
+                                <p className="text-gray-400">
+                                    Surveillance en temps réel —{' '}
+                                    {isConnected
+                                        ? <span className="text-green-400 font-semibold">Connecté au Broker MQTT</span>
+                                        : <span className="text-red-400 font-semibold">Déconnecté</span>}
+                                </p>
+                                {alerts.length > 0 && (
+                                    <p className="mt-2 text-sm text-yellow-400">
+                                        <i className="fa-solid fa-triangle-exclamation mr-2" />
+                                        {alerts[0].message}
+                                    </p>
+                                )}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="text-center">
-                                    <div className={`w-16 h-16 ${isConnected ? 'bg-primary/20' : 'bg-red-500/20'} rounded-full flex items-center justify-center mb-2`}>
-                                        <i className={`fa-solid fa-circle ${isConnected ? 'text-primary' : 'text-red-500'} text-2xl ${isConnected ? 'animate-pulse' : ''}`}></i>
-                                    </div>
-                                    <span className="text-xs text-gray-400">{isConnected ? "Système OK" : "Erreur Connexion"}</span>
+                            <div className="text-center">
+                                <div className={`w-16 h-16 ${isConnected ? 'bg-primary/20' : 'bg-red-500/20'} rounded-full flex items-center justify-center mb-2`}>
+                                    <i className={`fa-solid fa-circle ${isConnected ? 'text-primary' : 'text-red-500'} text-2xl ${isConnected ? 'animate-pulse' : ''}`} />
                                 </div>
+                                <span className="text-xs text-gray-400">{isConnected ? 'Système OK' : 'Erreur Connexion'}</span>
                             </div>
                         </div>
                     </div>
@@ -42,9 +63,9 @@ export default function DashboardPage() {
                             alerts.map((alert, index) => (
                                 <StatusCard
                                     key={index}
-                                    title={alert.level === 'error' ? "Erreur Critique" : "Avertissement"}
+                                    title={alert.level === 'error' ? 'Erreur Critique' : 'Avertissement'}
                                     description={alert.message}
-                                    type={alert.level === 'error' ? "danger" : "warning"}
+                                    type={alert.level === 'error' ? 'danger' : 'warning'}
                                 />
                             ))
                         ) : (
@@ -53,45 +74,59 @@ export default function DashboardPage() {
                     </div>
                 </section>
 
-                {/* Sensors Grid */}
+                {/* Sensors Grid — 6 tiles */}
                 <section id="sensors-grid" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">Capteurs Environnementaux</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6">
+                        {/* 1 - Température */}
                         <MetricCard
                             title="Température"
-                            value={sensorData.temperature || "--"}
+                            value={fmt(sensorData.temperature, 1)}
                             unit="°C"
                             icon="fa-temperature-half"
                             color="bg-red-500"
-                            status="Temps Réel"
-                            progress={sensorData.temperature ? (sensorData.temperature / 40) * 100 : 0}
+                            status="Temps réel"
+                            progress={sensorData.temperature ? (sensorData.temperature / 50) * 100 : 0}
                         />
-                        <MetricCard
-                            title="Humidité du Sol"
-                            value={sensorData.moisture || "--"}
-                            unit="%"
-                            icon="fa-droplet"
-                            color="bg-blue-500"
-                            status="Temps Réel"
-                            progress={sensorData.moisture || 0}
-                        />
-                        <MetricCard
-                            title="Luminosité"
-                            value={sensorData.light || "--"}
-                            unit="lux"
-                            icon="fa-sun"
-                            color="bg-yellow-500"
-                            status="Temps Réel"
-                            progress={sensorData.light ? (sensorData.light / 1000) * 100 : 0}
-                        />
+                        {/* 2 - Humidité Air */}
                         <MetricCard
                             title="Humidité Air"
-                            value={sensorData.humidity || "--"}
+                            value={fmt(sensorData.humidity)}
                             unit="%"
                             icon="fa-cloud"
                             color="bg-purple-500"
-                            status="Temps Réel"
+                            status="Temps réel"
                             progress={sensorData.humidity || 0}
+                        />
+                        {/* 3 - Pluie ADC */}
+                        <MetricCard
+                            title="Pluie"
+                            value={fmt(sensorData.rainPct)}
+                            unit="/255"
+                            icon={rainIcon}
+                            color={rainColor}
+                            status={rainLabel}
+                            progress={sensorData.rainPct !== null ? ((255 - sensorData.rainPct) / 255) * 100 : 0}
+                        />
+                        {/* 4 - Luminosité */}
+                        <MetricCard
+                            title="Luminosité"
+                            value={fmt(sensorData.light)}
+                            unit="lux"
+                            icon="fa-sun"
+                            color="bg-yellow-500"
+                            status="Temps réel"
+                            progress={sensorData.light ? (sensorData.light / 1000) * 100 : 0}
+                        />
+                        {/* 6 - Jour / Nuit */}
+                        <MetricCard
+                            title="Éclairage"
+                            value={sensorData.isDark === null ? '--' : sensorData.isDark ? 'Nuit' : 'Jour'}
+                            unit=""
+                            icon={sensorData.isDark ? 'fa-moon' : 'fa-sun'}
+                            color={sensorData.isDark ? 'bg-indigo-500' : 'bg-yellow-400'}
+                            status={sensorData.isDark ? 'Lampe ON' : 'Lampe OFF'}
+                            progress={sensorData.isDark ? 100 : 20}
                         />
                     </div>
                 </section>
@@ -99,16 +134,13 @@ export default function DashboardPage() {
                 {/* Plants Status */}
                 <section id="plants-status" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">État des Plants</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                         <PlantCard name="Haricot #1" type="Capsule K-Cup" growthDay={8} height={12} health="Excellente" />
-                        <PlantCard name="Haricot #2" type="Capsule K-Cup" growthDay={8} height={10} health="Bonne" />
-                        <PlantCard name="Haricot #3" type="Capsule K-Cup" growthDay={8} height={14} health="Excellente" />
-                        <PlantCard name="Haricot #4" type="Capsule K-Cup" growthDay={8} height={11} health="Bonne" />
+
                     </div>
                 </section>
 
             </main>
-
             <Footer />
         </div>
     );

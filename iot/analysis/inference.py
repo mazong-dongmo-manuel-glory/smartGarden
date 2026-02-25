@@ -20,22 +20,25 @@ class AnomalyDetector:
         else:
             logger.warning("AI Model not found. Please run train_model.py first.")
 
-    def check(self, temp, hum, soil, light, water_level):
+    def check(self, temp, hum, rain, light, water_level=None):
         """
         Returns True if anomaly detected, False otherwise.
-        ISOLATION FOREST: 1 for inliers (normal), -1 for outliers (anomaly).
+        Capteurs réels : temp, hum, rain_pct, light.
+        water_level gardé pour compatibilité API (ignoré si None).
         """
         if self.model is None:
             return False
 
-        try:
-            # Reshape for single sample prediction
-            features = np.array([[temp, hum, soil, light, water_level]])
-            prediction = self.model.predict(features)
-            
-            if prediction[0] == -1:
-                return True
+        # Ignorer si valeurs critiques manquantes
+        if temp is None or hum is None:
             return False
+
+        try:
+            rain_val  = rain        if rain        is not None else 0
+            light_val = light       if light       is not None else 0
+            wl_val    = water_level if water_level is not None else 0
+            features  = np.array([[temp, hum, rain_val, light_val, wl_val]])
+            return self.model.predict(features)[0] == -1
         except Exception as e:
             logger.error(f"Inference error: {e}")
             return False

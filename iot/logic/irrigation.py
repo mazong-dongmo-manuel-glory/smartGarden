@@ -57,3 +57,13 @@ class IrrigationManager:
         self.pump.off()
         self.is_watering = False
         self.manual_override = False
+
+    def stop_watering_manual(self):
+        """Immediately stops a running manual watering cycle (STOP_WATERING command)."""
+        if not self.is_watering:
+            logger.warning("Irrigation: Pump is not running, nothing to stop.")
+            return
+        logger.info("Irrigation: Manual stop requested via MQTT.")
+        self.pump.off()
+        self.is_watering = False
+        self.manual_override = False

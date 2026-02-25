@@ -8,6 +8,8 @@ import Setting from "./pages/SettingPage";
 import History from "./pages/HistoryPage";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
+import ProtectedRoute from "./components/ProtectedRoute";
+
 const router = createBrowserRouter([
     {
         path: "/",
@@ -15,15 +17,15 @@ const router = createBrowserRouter([
     },
     {
         path: '/dashboard',
-        element: <Dashboard />
+        element: <ProtectedRoute><Dashboard /></ProtectedRoute>
     },
     {
         path: '/setting',
-        element: <Setting />
+        element: <ProtectedRoute><Setting /></ProtectedRoute>
     },
     {
         path: '/history',
-        element: <History />
+        element: <ProtectedRoute><History /></ProtectedRoute>
     }
 ]);
 

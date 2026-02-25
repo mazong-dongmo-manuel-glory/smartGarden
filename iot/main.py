@@ -1,14 +1,13 @@
 import time
-import sys
 import json
-from config import LOOP_INTERVAL, PIN_PUMP, PIN_GROW_LIGHT, PIN_LED_GREEN, PIN_LED_ORANGE, PIN_LED_RED
+import threading
+from config import (LOOP_INTERVAL, PIN_PUMP, PIN_GROW_LIGHT,
+                    PIN_LED_GREEN, PIN_LED_ORANGE, PIN_LED_RED)
 from utils.logger import logger
 
-# Import Components
 from sensors.temperature import TemperatureSensor
-from sensors.soil_moisture import SoilMoistureSensor
 from sensors.light_sensor import LightSensor
-from sensors.water_level import WaterLevelSensor # Bonus
+from sensors.water_level import WaterLevelSensor   # = capteur pluie ADC A0 + GPIO 17
 
 from actuators.pump import Pump
 from actuators.grow_light import GrowLight
@@ -17,118 +16,135 @@ from actuators.lcd import Lcd
 from utils.database import DatabaseManager
 from analysis.inference import AnomalyDetector
 
-from logic.irrigation import IrrigationManager
 from logic.lighting import LightingManager
 from logic.alert_manager import AlertManager
+from logic.irrigation import IrrigationManager
 
 from mqtt.client import MqttClient
 
+
 def main():
-    logger.info("Initializing Smart Garden IoT System...")
+    logger.info("=== Smart Garden — Démarrage ===")
 
-    # --- Hardware Initialization ---
-    temp_sensor = TemperatureSensor()
-    soil_sensor = SoilMoistureSensor()
-    light_sensor = LightSensor()
-    water_level_sensor = WaterLevelSensor() # Bonus
-    
-    pump = Pump(PIN_PUMP)
-    grow_light = GrowLight(PIN_GROW_LIGHT)
-    leds = Leds(PIN_LED_GREEN, PIN_LED_ORANGE, PIN_LED_RED)
-    lcd = Lcd()
-
-    # --- Logic Initialization ---
-    irrigation = IrrigationManager(pump)
-    lighting = LightingManager(grow_light)
-    alerts = AlertManager(leds, lcd)
-    
-    # --- Database & AI Initialization ---
-    db = DatabaseManager()
-    anomaly_detector = AnomalyDetector()
-
-    # --- MQTT Initialization ---
-    def command_callback(topic, payload):
-        """Handles incoming MQTT commands."""
+    # ── GPIO : mode global avant toute initialisation matérielle ──────
+    if not __import__('config').MOCK_MODE:
         try:
-            data = json.loads(payload)
-            logger.info(f"Command received: {data}")
-            
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)   # éviter les warnings "already in use"
+            logger.info("GPIO: mode BCM activé")
+        except ImportError:
+            pass   # non-Pi (dev)
+
+    # ── Capteurs ───────────────────────────────────────────────────────
+    temp_sensor  = TemperatureSensor()       # DHT11 → temp + humidité
+    light_sensor = LightSensor()             # LDR ADC + RC → lux + is_dark
+    rain_sensor  = WaterLevelSensor()        # Pluie ADC A0 + GPIO 17
+
+    # ── Actionneurs ────────────────────────────────────────────────────
+    pump       = Pump(PIN_PUMP)              # GPIO 18 (relais actif-LOW)
+    grow_light = GrowLight(PIN_GROW_LIGHT)   # GPIO 22
+    leds       = Leds(PIN_LED_GREEN, PIN_LED_ORANGE, PIN_LED_RED)
+    lcd        = Lcd()
+
+    # ── Logique ────────────────────────────────────────────────────────
+    irrigation = IrrigationManager(pump)
+    lighting   = LightingManager(grow_light)
+    alerts     = AlertManager(leds, lcd)
+    db         = DatabaseManager()
+    anomaly    = AnomalyDetector()
+
+    # ── MQTT ───────────────────────────────────────────────────────────
+    def command_callback(topic, payload):
+        try:
+            data    = json.loads(payload)
             command = data.get('command')
-            
+            logger.info(f"[CMD] {command} {data}")
+
             if command == 'START_WATERING':
                 duration = data.get('duration', 10)
                 irrigation.start_watering_manual(duration)
-                
-            elif command == 'SET_INTENSITY':
-                value = data.get('value', 0)
-                grow_light.set_intensity(value)
 
-            elif command == 'EXPORT_DATA':
-                success = db.export_to_csv()
-                if success:
-                    mqtt_client.publish_alert("Rapport généré avec succès!", "info")
-                else:
-                    mqtt_client.publish_alert("Erreur lors de la génération du rapport.", "error")
-                
+            elif command == 'STOP_WATERING':
+                irrigation.stop_watering_manual()
+
+            elif command == 'SET_INTENSITY':
+                # Force l'éclairage manuellement pour 1h (3600s)
+                lighting.set_manual(data.get('value', 0), 3600)
+
         except Exception as e:
-            logger.error(f"Failed to parse command: {e}")
+            logger.error(f"[CMD] Erreur: {e}")
 
     mqtt_client = MqttClient(command_callback)
     mqtt_client.connect()
 
-    logger.info("System Initialized. Starting Main Loop...")
+    # ── Calibration RC lumière ─────────────────────────────────────────
+    logger.info("Calibration RC lumière (2 s)…")
+    light_sensor.calibrate_rc()
+
+    logger.info("Boucle principale démarrée.")
 
     try:
         while True:
-            # 1. Read Sensors
-            temp, hum = temp_sensor.read()
-            moisture = soil_sensor.read()
-            light_level = light_sensor.read()
-            water_level = water_level_sensor.read() # Bonus
+            # 1. Lire les capteurs
+            temp, hum    = temp_sensor.read()
+            lux          = light_sensor.read()       # met à jour is_dark
+            rain_pct     = rain_sensor.read()        # 0-100 %
+            rain_digital = rain_sensor._read_digital()  # 0=pluie, 1=sec
 
-            logger.info(f"--- Cycle Data ---")
-            logger.info(f"Temp: {temp}°C, Hum: {hum}%, Soil: {moisture}%, Light: {light_level}lux, WaterLvl: {water_level}%")
+            logger.info(f"T:{temp}°C H:{hum}% Pluie:{rain_pct}% Lux:{lux} Nuit:{light_sensor.is_dark}")
 
-            # 2. Save to Database
-            db.save_reading(temp, hum, moisture, light_level, water_level)
+            # 2. Éclairage
+            if lighting.manual_override:
+                pass # Mode manuel en cours, on ne touche à rien
+            elif light_sensor.is_dark:
+                if grow_light.intensity != 100:
+                    grow_light.set_intensity(100)
+            else:
+                lighting.check()
 
-            # 3. Anomaly Detection
-            if anomaly_detector.check(temp, hum, moisture, light_level, water_level):
-                logger.warning("Anomaly Detected by AI Model!")
-                mqtt_client.publish_alert("Anomaly Detected!", "error")
-                leds.set('red', True)
+            # 3. IA anomalie
+            alert_msg = None
+            has_anomaly = anomaly.check(temp, hum, rain_pct, lux)
+            if has_anomaly:
+                logger.warning("Anomalie IA détectée!")
+                # leds.set('red', True)  # Désormais géré par alert_manager
+                alert_msg = {"message": "Anomalie IA détectée", "level": "error"}
 
-            # 4. Run Logic
-            irrigation.check(moisture)
-            lighting.check()
-            
-            # 5. Update Alerts (LEDs & LCD)
-            # Add water level check to alerts
-            if water_level < 20:
-                logger.warning("Low Water Level!")
-                leds.set('orange', True) # Warning
-            
-            alerts.update(temp, hum, moisture, light_level)
+            # 4. Pompe et Arrosage Automatique
+            # Conversion de la valeur ADC pluie brute (255=sec, 0=eau) en % d'humidité du sol
+            virtual_moisture = ((255.0 - rain_pct) / 255.0) * 100.0
+            irrigation.check(virtual_moisture)
 
-            # 6. MQTT Publish
-            mqtt_client.publish_sensors(temp, hum, moisture, light_level)
-            if water_level < 20:
-                 mqtt_client.publish_alert("Low Water Level", "warning")
+            # 5. Alertes LEDs + LCD
+            alerts.update(temp, hum, rain_pct, rain_digital, light_sensor.is_dark, has_anomaly)
+
+            # 6. Sauvegarde
+            db.save_reading(temp, hum, rain_pct, lux, None)
+
+            # 5. Publication MQTT
+            mqtt_client.publish_sensors(
+                temp=temp,         hum=hum,
+                lux=lux,           is_dark=light_sensor.is_dark,
+                light_intensity=grow_light.intensity,
+                rain_pct=rain_pct, rain_digital=rain_digital,
+                pump_on=pump.is_on
+            )
 
             time.sleep(LOOP_INTERVAL)
 
     except KeyboardInterrupt:
-        logger.info("System stopping...")
-        pump.off()
+        logger.info("Arrêt.")
+        pump.cleanup()
+        grow_light.cleanup()
         leds.set('green', False)
-        # Nettoyage GPIO (capteur pluie numérique, etc.)
         if not __import__('config').MOCK_MODE:
             try:
                 import RPi.GPIO as GPIO
                 GPIO.cleanup()
-                logger.info("GPIO nettoyé.")
             except Exception:
                 pass
+
 
 if __name__ == "__main__":
     main()
