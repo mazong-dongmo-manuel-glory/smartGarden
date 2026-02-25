@@ -79,6 +79,10 @@ def main():
     mqtt_client = MqttClient(command_callback)
     mqtt_client.connect()
 
+    # Calibration RC unique (bloque ~2 s) — avant la boucle principale
+    logger.info("Calibration du capteur RC de lumière (2 s)…")
+    light_sensor.calibrate_rc()
+
     logger.info("System Initialized. Starting Main Loop...")
 
     try:
@@ -103,7 +107,16 @@ def main():
 
             # 4. Run Logic
             irrigation.check(moisture)
-            lighting.check()
+
+            # Contrôle lumière : RC prime sur le planning horaire
+            if light_sensor.is_dark:
+                # Obscurité détectée par RC → lampe à 100 %
+                if grow_light.intensity != 100:
+                    logger.info("Éclairage: obscurité RC → lampe ON (100%)")
+                    grow_light.set_intensity(100)
+            else:
+                # Lumière naturelle → planning horaire
+                lighting.check()
             
             # 5. Update Alerts (LEDs & LCD)
             # Add water level check to alerts
@@ -114,7 +127,9 @@ def main():
             alerts.update(temp, hum, moisture, light_level)
 
             # 6. MQTT Publish
-            mqtt_client.publish_sensors(temp, hum, moisture, light_level)
+            mqtt_client.publish_sensors(temp, hum, moisture, light_level,
+                                        water_level=water_level,
+                                        rain_level=water_level)
             if water_level < 20:
                  mqtt_client.publish_alert("Low Water Level", "warning")
 
@@ -123,6 +138,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("System stopping...")
         pump.cleanup()
+        grow_light.cleanup()
         leds.set('green', False)
         # Nettoyage GPIO (capteur pluie numérique, etc.)
         if not __import__('config').MOCK_MODE:

@@ -25,14 +25,14 @@ export default function DashboardPage() {
         <div className="bg-gray-950 text-gray-100 font-sans min-h-screen">
             <Header />
 
-            <main id="main-content" className="max-w-[1440px] mx-auto px-8 py-8">
+            <main id="main-content" className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-x-hidden">
 
                 {/* Hero Status */}
                 <section id="hero-status" className="mb-8">
-                    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-8 border border-gray-700">
+                    <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-4 sm:p-8 border border-gray-700">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-3xl font-bold mb-2">État du Système</h2>
+                                <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">État du Système</h2>
                                 <p className="text-gray-400">
                                     Surveillance en temps réel —{' '}
                                     {isConnected
@@ -77,7 +77,7 @@ export default function DashboardPage() {
                 {/* Sensors Grid — 6 tiles */}
                 <section id="sensors-grid" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">Capteurs Environnementaux</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-6">
                         <MetricCard
                             title="Température"
                             value={fmt(sensorData.temperature, 1)}
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 {/* Plants Status */}
                 <section id="plants-status" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">État des Plants</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                         <PlantCard name="Haricot #1" type="Capsule K-Cup" growthDay={8} height={12} health="Excellente" />
                         <PlantCard name="Haricot #2" type="Capsule K-Cup" growthDay={8} height={10} health="Bonne" />
                         <PlantCard name="Haricot #3" type="Capsule K-Cup" growthDay={8} height={14} health="Excellente" />

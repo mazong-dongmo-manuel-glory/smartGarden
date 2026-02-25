@@ -3,7 +3,7 @@ import json
 from config import (MQTT_BROKER, MQTT_PORT, MQTT_CLIENT_ID,
                     TOPIC_COMMANDS_WATER, TOPIC_COMMANDS_LIGHT,
                     TOPIC_SENSORS_TEMP, TOPIC_SENSORS_SOIL,
-                    TOPIC_SENSORS_LIGHT, TOPIC_ALERTS)
+                    TOPIC_SENSORS_LIGHT, TOPIC_SENSORS_WATER, TOPIC_ALERTS)
 from utils.logger import logger
 
 
@@ -61,11 +61,12 @@ class MqttClient:
 
     # ── Publication ────────────────────────────────────────────────────────
 
-    def publish_sensors(self, temp, hum, soil, light):
+    def publish_sensors(self, temp, hum, soil, light, water_level=None, rain_level=None):
         """Publie un cycle complet de données capteurs."""
-        self._publish(TOPIC_SENSORS_TEMP, {"temperature": temp, "humidity": hum})
-        self._publish(TOPIC_SENSORS_SOIL, {"moisture": soil})
-        self._publish(TOPIC_SENSORS_LIGHT, {"light": light})
+        self._publish(TOPIC_SENSORS_TEMP,  {"temperature": temp,  "humidity": hum})
+        self._publish(TOPIC_SENSORS_SOIL,  {"moisture":    soil})
+        self._publish(TOPIC_SENSORS_LIGHT, {"light":       light})
+        self._publish(TOPIC_SENSORS_WATER, {"water_level": water_level, "rain": rain_level})
 
     def publish_alert(self, message, level="info"):
         self._publish(TOPIC_ALERTS, {"message": message, "level": level})

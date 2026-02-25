@@ -52,13 +52,15 @@ export default function useMqtt() {
             setIsConnected(true);
             addEvent('system', 'Connexion au broker MQTT établie', 'success');
 
-            // Sensors
             mqttClient.subscribe('jardin/sensors/+', err => {
                 if (!err) console.log('Subscribed to jardin/sensors/+');
             });
             // Alerts
             mqttClient.subscribe('jardin/alerts', err => {
                 if (!err) console.log('Subscribed to jardin/alerts');
+            });
+            mqttClient.subscribe('jardin/commands/+', err => {
+                if (!err) console.log('Subscribed to jardin/commands/+');
             });
         });
 
@@ -75,7 +77,7 @@ export default function useMqtt() {
                     addEvent(topic, `Temp ${data.temperature}°C | Hum ${data.humidity}%`, 'info');
 
                 } else if (topic === 'jardin/sensors/soil') {
-                    setSensorData(prev => ({ ...prev, moisture: data.moisture, waterLevel: data.water_level ?? null }));
+                    setSensorData(prev => ({ ...prev, moisture: data.moisture }));
                     pushChartPoint(setChartMoisture, data.moisture);
                     addEvent(topic, `Sol ${data.moisture}%`, 'info');
 
@@ -83,15 +85,12 @@ export default function useMqtt() {
                     setSensorData(prev => ({ ...prev, light: data.light }));
                     addEvent(topic, `Lumière ${data.light} lux`, 'info');
 
-                } else if (topic === 'jardin/sensors/rain') {
-                    // Payload from rain_sensor.py: { rain: <ADC 0-255>, soil: <ADC 0-255> }
-                    setSensorData(prev => ({
-                        ...prev,
-                        rain: data.rain ?? prev.rain,
-                        moisture: data.soil != null ? data.soil : prev.moisture,
-                    }));
-                    const level = data.rain < 80 ? 'Pas de pluie' : data.rain < 150 ? 'Pluie légère' : 'Forte pluie';
-                    addEvent(topic, `Pluie ADC=${data.rain} → ${level}`, data.rain >= 150 ? 'warning' : 'info');
+                } else if (topic === 'jardin/sensors/water') {
+                    // Payload: { water_level: %, rain: % }
+                    const wl = data.water_level ?? null;
+                    const rain = data.rain ?? null;
+                    setSensorData(prev => ({ ...prev, waterLevel: wl, rain }));
+                    addEvent(topic, `Eau ${wl}% | Pluie ${rain}%`, wl < 20 ? 'warning' : 'info');
 
                 } else if (topic === 'jardin/alerts') {
                     setAlerts(prev => [data, ...prev].slice(0, 5));

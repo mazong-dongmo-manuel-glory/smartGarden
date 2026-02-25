@@ -39,14 +39,14 @@ export default function SettingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* ── Lighting Control ── */}
-                <div id="lighting-control" className="bg-gray-900 rounded-xl p-8 border border-gray-800">
+                <div id="lighting-control" className="bg-gray-900 rounded-xl p-4 sm:p-8 border border-gray-800">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-xl font-semibold mb-2">Système d'Éclairage</h3>
                             <p className="text-sm text-gray-400">Mode automatique actif (5h–17h)</p>
                         </div>
-                        <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                            <i className="fa-solid fa-lightbulb text-yellow-500 text-3xl" />
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                            <i className="fa-solid fa-lightbulb text-yellow-500 text-2xl sm:text-3xl" />
                         </div>
                     </div>
 
@@ -77,11 +77,11 @@ export default function SettingPage() {
                 </div>
 
                 {/* ── Watering Control ── */}
-                <div id="watering-control" className="bg-gray-900 rounded-xl p-8 border border-gray-800 flex flex-col">
+                <div id="watering-control" className="bg-gray-900 rounded-xl p-4 sm:p-8 border border-gray-800 flex flex-col">
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-xl font-semibold mb-2">Système d'Arrosage</h3>
-                            <p className="text-sm text-gray-400">Contrôlez la pompe (relais GPIO 17)</p>
+                            <p className="text-sm text-gray-400">Contrôlez la pompe (relais GPIO 18)</p>
                         </div>
                         <div className={`w-16 h-16 rounded-full flex items-center justify-center transition ${isPumping ? 'bg-blue-500/40' : 'bg-blue-500/20'}`}>
                             <i className={`fa-solid fa-faucet-drip text-blue-500 text-3xl ${isPumping ? 'animate-bounce' : ''}`} />
@@ -135,7 +135,7 @@ export default function SettingPage() {
                 </div>
 
                 {/* ── Preferences ── */}
-                <div className="md:col-span-2 bg-gray-900 rounded-xl p-8 border border-gray-800">
+                <div className="md:col-span-2 bg-gray-900 rounded-xl p-4 sm:p-8 border border-gray-800">
                     <h3 className="text-xl font-semibold mb-6">Préférences Générales</h3>
                     <div className="space-y-6">
                         {[
@@ -152,21 +152,21 @@ export default function SettingPage() {
                                 value: autoMode, toggle: () => setAutoMode(v => !v),
                             },
                         ].map(({ id, label, desc, icon, color, bg, value, toggle }) => (
-                            <div key={id} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}>
-                                        <i className={`fa-solid ${icon} ${color}`} />
+                            <div key={id} className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-gray-800 rounded-lg">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className={`w-9 h-9 sm:w-10 sm:h-10 ${bg} rounded-full flex items-center justify-center shrink-0`}>
+                                        <i className={`fa-solid ${icon} ${color} text-sm sm:text-base`} />
                                     </div>
-                                    <div>
-                                        <h4 className="font-semibold">{label}</h4>
-                                        <p className="text-sm text-gray-400">{desc}</p>
+                                    <div className="min-w-0">
+                                        <h4 className="font-semibold text-sm sm:text-base leading-tight">{label}</h4>
+                                        <p className="text-xs sm:text-sm text-gray-400 leading-snug mt-0.5">{desc}</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={toggle}
-                                    className={`w-14 h-7 rounded-full p-1 transition duration-300 ${value ? 'bg-primary' : 'bg-gray-600'}`}
+                                    className={`shrink-0 w-12 h-6 sm:w-14 sm:h-7 rounded-full p-1 transition duration-300 ${value ? 'bg-primary' : 'bg-gray-600'}`}
                                 >
-                                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition duration-300 ${value ? 'translate-x-7' : 'translate-x-0'}`} />
+                                    <div className={`w-4 h-4 sm:w-5 sm:h-5 bg-white rounded-full shadow-md transform transition duration-300 ${value ? 'translate-x-6 sm:translate-x-7' : 'translate-x-0'}`} />
                                 </button>
                             </div>
                         ))}

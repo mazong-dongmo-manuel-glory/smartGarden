@@ -34,7 +34,7 @@ export default function HistoryPage() {
 
     return (
         <Layout>
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
                 <h2 className="text-2xl font-bold">Historique des Données</h2>
                 <button
                     onClick={handleExport}
@@ -95,7 +95,7 @@ export default function HistoryPage() {
                         </span>
                     )}
                 </h2>
-                <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+                <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden overflow-x-auto">
                     <table className="w-full text-left text-sm text-gray-400">
                         <thead className="bg-gray-800 text-gray-200 uppercase font-medium">
                             <tr>

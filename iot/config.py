@@ -13,10 +13,11 @@ MQTT_CLIENT_ID = "smart_garden_raspberry_pi"
 
 # --- Topics ---
 TOPIC_PREFIX = "jardin"
-TOPIC_SENSORS_TEMP = f"{TOPIC_PREFIX}/sensors/temperature"
-TOPIC_SENSORS_SOIL = f"{TOPIC_PREFIX}/sensors/soil"
+TOPIC_SENSORS_TEMP  = f"{TOPIC_PREFIX}/sensors/temperature"
+TOPIC_SENSORS_SOIL  = f"{TOPIC_PREFIX}/sensors/soil"
 TOPIC_SENSORS_LIGHT = f"{TOPIC_PREFIX}/sensors/light"
-TOPIC_ALERTS = f"{TOPIC_PREFIX}/alerts"
+TOPIC_SENSORS_WATER = f"{TOPIC_PREFIX}/sensors/water"   # niveau eau + pluie
+TOPIC_ALERTS        = f"{TOPIC_PREFIX}/alerts"
 TOPIC_COMMANDS_WATER = f"{TOPIC_PREFIX}/commands/water"
 TOPIC_COMMANDS_LIGHT = f"{TOPIC_PREFIX}/commands/light"
 
