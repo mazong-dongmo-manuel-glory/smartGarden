@@ -1,7 +1,7 @@
 import os
 
 # --- General Settings ---
-MOCK_MODE = True  # Set to False on actual Raspberry Pi
+MOCK_MODE = False  # Set to False on actual Raspberry Pi
 LOOP_INTERVAL = 5  # Seconds
 
 # --- MQTT Settings ---
