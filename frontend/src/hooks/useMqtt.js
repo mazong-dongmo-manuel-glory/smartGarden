@@ -63,7 +63,7 @@ export default function useMqtt() {
                     addEvent(topic, `T:${data.temperature}°C | H:${data.humidity}%`);
 
                 } else if (topic === 'jardin/sensors/light') {
-                    setSensorData(prev => ({ ...prev, light: data.light, isDark: data.is_dark }));
+                    setSensorData(prev => ({ ...prev, light: data.light, isDark: data.is_dark, lightIntensity: data.intensity }));
                     addEvent(topic, `${data.light} lux | ${data.is_dark ? 'Nuit 🌙' : 'Jour ☀️'}`);
 
                 } else if (topic === 'jardin/sensors/water') {

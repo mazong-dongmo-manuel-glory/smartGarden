@@ -69,7 +69,8 @@ def main():
                 irrigation.stop_watering_manual()
 
             elif command == 'SET_INTENSITY':
-                grow_light.set_intensity(data.get('value', 0))
+                # Force l'éclairage manuellement pour 1h (3600s)
+                lighting.set_manual(data.get('value', 0), 3600)
 
         except Exception as e:
             logger.error(f"[CMD] Erreur: {e}")
@@ -94,7 +95,9 @@ def main():
             logger.info(f"T:{temp}°C H:{hum}% Pluie:{rain_pct}% Lux:{lux} Nuit:{light_sensor.is_dark}")
 
             # 2. Éclairage
-            if light_sensor.is_dark:
+            if lighting.manual_override:
+                pass # Mode manuel en cours, on ne touche à rien
+            elif light_sensor.is_dark:
                 if grow_light.intensity != 100:
                     grow_light.set_intensity(100)
             else:
@@ -120,6 +123,7 @@ def main():
             mqtt_client.publish_sensors(
                 temp=temp,         hum=hum,
                 lux=lux,           is_dark=light_sensor.is_dark,
+                light_intensity=grow_light.intensity,
                 rain_pct=rain_pct, rain_digital=rain_digital,
                 pump_on=pump.is_on
             )

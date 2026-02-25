@@ -8,15 +8,15 @@ import useMqtt from '../hooks/useMqtt';
 
 // Pluie valeur brute ADC (0-255) : valeur ÉLEVÉE = SEC
 function rainMeta(rawVal) {
-    if (rawVal === null) return { color: 'bg-gray-500', label: 'En attente' };
-    if (rawVal >= 150) return { color: 'bg-green-500', label: 'Sec' };
-    if (rawVal >= 80) return { color: 'bg-blue-400', label: 'Pluie légère' };
-    return { color: 'bg-blue-600', label: 'Forte pluie' };
+    if (rawVal === null) return { color: 'bg-gray-500', label: 'En attente', icon: 'fa-spinner' };
+    if (rawVal >= 150) return { color: 'bg-green-500', label: 'Sec', icon: 'fa-sun' };
+    if (rawVal >= 80) return { color: 'bg-blue-400', label: 'Pluie légère', icon: 'fa-cloud-rain' };
+    return { color: 'bg-blue-600', label: 'Forte pluie', icon: 'fa-cloud-showers-heavy' };
 }
 
 export default function DashboardPage() {
     const { isConnected, sensorData, alerts } = useMqtt();
-    const { color: rainColor, label: rainLabel } = rainMeta(sensorData.rainPct);
+    const { color: rainColor, label: rainLabel, icon: rainIcon } = rainMeta(sensorData.rainPct);
 
     const fmt = (v, decimals = 0) =>
         v !== null && v !== undefined ? Number(v).toFixed(decimals) : '--';
@@ -103,7 +103,7 @@ export default function DashboardPage() {
                             title="Pluie"
                             value={fmt(sensorData.rainPct)}
                             unit="/255"
-                            icon="fa-cloud-rain"
+                            icon={rainIcon}
                             color={rainColor}
                             status={rainLabel}
                             progress={sensorData.rainPct !== null ? ((255 - sensorData.rainPct) / 255) * 100 : 0}

@@ -8,7 +8,7 @@ export default function SettingPage() {
     const [duration, setDuration] = useState(10);   // watering duration (s)
     const [isPumping, setIsPumping] = useState(false);
 
-    const { isConnected, startWatering, stopWatering, setLightIntensity } = useMqtt();
+    const { isConnected, sensorData, startWatering, stopWatering, setLightIntensity } = useMqtt();
 
     const handleStart = () => {
         startWatering(duration);
@@ -20,10 +20,13 @@ export default function SettingPage() {
         setIsPumping(false);
     };
 
+    // Light intensity fallback to 0 if not yet received
+    const currentIntensity = sensorData.lightIntensity || 0;
+
     const lightLevels = [
-        { label: 'Matin', sublabel: 'Intense', value: 100, icon: 'fa-sun', active: true },
-        { label: 'Après-midi', sublabel: 'Modéré', value: 50, icon: 'fa-cloud-sun', active: false },
-        { label: 'Nuit', sublabel: 'OFF', value: 0, icon: 'fa-moon', active: false },
+        { label: 'Matin', sublabel: 'Intense', value: 100, icon: 'fa-sun', active: currentIntensity === 100 },
+        { label: 'Après-midi', sublabel: 'Modéré', value: 50, icon: 'fa-cloud-sun', active: currentIntensity === 50 },
+        { label: 'Nuit', sublabel: 'OFF', value: 0, icon: 'fa-moon', active: currentIntensity === 0 },
     ];
 
     return (

@@ -50,9 +50,9 @@ class MqttClient:
 
     # ── Publication ────────────────────────────────────────────────────
 
-    def publish_sensors(self, temp, hum, lux, is_dark, rain_pct, rain_digital, pump_on=False):
+    def publish_sensors(self, temp, hum, lux, is_dark, light_intensity, rain_pct, rain_digital, pump_on=False):
         self._publish(TOPIC_SENSORS_TEMP,  {"temperature": temp, "humidity": hum})
-        self._publish(TOPIC_SENSORS_LIGHT, {"light": lux,        "is_dark": is_dark})
+        self._publish(TOPIC_SENSORS_LIGHT, {"light": lux, "is_dark": is_dark, "intensity": light_intensity})
         self._publish(TOPIC_SENSORS_WATER, {
             "rain_pct":     rain_pct,
             "rain_digital": rain_digital,
