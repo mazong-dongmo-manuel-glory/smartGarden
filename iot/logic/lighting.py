@@ -38,10 +38,10 @@ class LightingManager:
         hour = datetime.datetime.now().hour
 
         if 5 <= hour < 12:
-            intensity = 100
+            intensity = 
             mode = "Matin (Intense)"
         elif 12 <= hour < 17:
-            intensity = 50
+            intensity = 75
             mode = "Après-midi (Modéré)"
         else:
             intensity = 0
